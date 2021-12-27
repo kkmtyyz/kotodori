@@ -10,8 +10,21 @@ impl Dram {
         }
     }
 
-    pub fn print(self) {
-        print!("{:?}", self.memory);
+    pub fn print(&self) {
+        println!("{:?}", self.memory);
+    }
+
+    pub fn prange(&self, begin: usize, end: usize) {
+        for i in begin..end {
+            if i != 0 && i % 4 == 0 {
+                print!(" ");
+                if i % 32 == 0 {
+                    println!();
+                }
+            }
+            print!("{:X}", self.memory[i]);
+        }
+        println!();
     }
 
     pub fn load(&mut self, data: String) {

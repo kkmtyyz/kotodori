@@ -25,8 +25,8 @@ impl Emulator {
         print!("{:#?}", self.reg);
     }
 
-    pub fn print_dram(&self) {
-        print!("{:?}", self.dram);
+    pub fn print_dram(&self, begin: usize, end: usize) {
+        self.dram.prange(begin, end);
     }
 
     pub fn exe(&mut self) {

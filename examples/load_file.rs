@@ -8,5 +8,5 @@ fn main() {
     let cmd = Command::get();
     let mut emu = Emulator::new(cmd);
     emu.exe();
-    emu.print_dram();
+    emu.print_dram(0, 64);
 }
