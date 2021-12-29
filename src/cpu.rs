@@ -1,5 +1,11 @@
+use crate::bus::Bus;
+use crate::conf;
+
 #[derive(Debug)]
-pub struct Register {
+pub struct Cpu {
+    bus: Bus,
+
+    // registers
     zero: u32,
     ra: u32,
     sp: u32,
@@ -35,9 +41,10 @@ pub struct Register {
     pc: u32,
 }
 
-impl Register {
-    pub fn new() -> Register {
-        Register {
+impl Cpu {
+    pub fn new(bus: Bus) -> Cpu {
+        Cpu {
+            bus,
             zero: 0,
             ra: 0,
             sp: 0,
@@ -74,7 +81,25 @@ impl Register {
         }
     }
 
-    pub fn print(self) {
+    pub fn print(&self) {
         println!("{:#?}", self);
+    }
+
+    pub fn pdram_range(&self, begin: usize, end: usize) {
+        self.bus.pdram_range(begin, end);
+    }
+
+    pub fn init(&mut self) {
+        self.sp = conf::STACK_BOTTOM;
+        self.pc = conf::TEXT_START;
+    }
+
+    pub fn run(&mut self) {
+        self.load_instruction();
+    }
+
+    fn load_instruction(&self) {
+        let data = self.bus.load_dram(self.pc);
+        println!("load instruction: {:08X}", data);
     }
 }

@@ -96,4 +96,18 @@ impl Dram {
             _ => panic!("Not hex: {}", c),
         }
     }
+
+    pub fn load_dword(&self, begin: u32) -> u32 {
+        let mut res: u32 = 0;
+        for i in begin..begin + 4 {
+            match self.memory.get(i as usize) {
+                Some(data) => {
+                    res <<= 8;
+                    res |= *data as u32;
+                }
+                None => panic!("access to invalid address"),
+            }
+        }
+        res
+    }
 }

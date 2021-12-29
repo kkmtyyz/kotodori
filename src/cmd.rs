@@ -10,7 +10,7 @@ impl Command {
     fn init() -> Command {
         Command {
             in_f: None,
-            mem_size: Some(100_000),
+            mem_size: Some(1_000_000),
         }
     }
 
