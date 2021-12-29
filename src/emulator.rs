@@ -2,9 +2,9 @@ use std::fs::OpenOptions;
 use std::io::prelude::*;
 use std::path::Path;
 
+use crate::cmd::Command;
 use crate::cpu::Register;
 use crate::dram::Dram;
-use crate::cmd::Command;
 
 pub struct Emulator {
     reg: Register,
@@ -17,7 +17,7 @@ impl Emulator {
         Emulator {
             reg: Register::new(),
             dram: Dram::new(cmd.mem_size.unwrap()),
-            cmd
+            cmd,
         }
     }
 
@@ -31,7 +31,7 @@ impl Emulator {
 
     pub fn exe(&mut self) {
         if let Some(in_f) = self.cmd.in_f.clone() {
-            &mut self.load_file_to_dram(in_f);
+            self.load_file_to_dram(in_f);
         }
     }
 

@@ -3,7 +3,7 @@ use std::env;
 #[derive(Debug)]
 pub struct Command {
     pub in_f: Option<String>,
-    pub mem_size: Option<usize>
+    pub mem_size: Option<usize>,
 }
 
 impl Command {
@@ -32,7 +32,7 @@ impl Command {
             match &*arg.unwrap() {
                 "-f" => cmd.in_f = Command::get_arg_string(&mut args),
                 "-m" => cmd.mem_size = Command::get_arg_usize(&mut args),
-                _ => ()
+                _ => (),
             }
         }
         cmd
@@ -41,14 +41,14 @@ impl Command {
     fn get_arg_string(args: &mut Vec<String>) -> Option<String> {
         match args.pop() {
             Some(v) => Some(String::from(v)),
-            None => None
+            None => None,
         }
     }
 
     fn get_arg_usize(args: &mut Vec<String>) -> Option<usize> {
         match args.pop() {
             Some(v) => Some(String::from(v).parse::<usize>().unwrap()),
-            None => None
+            None => None,
         }
     }
 }
