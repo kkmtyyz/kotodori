@@ -24,7 +24,7 @@ impl Emulator {
     }
 
     pub fn print_cpu(&self) {
-        print!("{:#?}", self.cpu);
+        self.cpu.print();
     }
 
     pub fn print_dram(&self, begin: usize, end: usize) {

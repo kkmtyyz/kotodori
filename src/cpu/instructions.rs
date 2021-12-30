@@ -30,6 +30,14 @@ fn to_name(opcode: u8, funct3: u8, funct7: u8, funct12: u16) -> InstName {
             0b111 => InstName::Bgeu("bgeu".to_owned()),
             _ => panic!("convert to instruction name"),
         },
+        0b000_0011 => match funct3 {
+            0b000 => InstName::Lb("lb".to_owned()),
+            0b001 => InstName::Lh("lh".to_owned()),
+            0b010 => InstName::Lw("lw".to_owned()),
+            0b100 => InstName::Lbu("lbu".to_owned()),
+            0b101 => InstName::Lhu("lhu".to_owned()),
+            _ => panic!("convert to instruction name"),
+        },
         0b010_0011 => match funct3 {
             0b000 => InstName::Sb("sb".to_owned()),
             0b001 => InstName::Sh("sh".to_owned()),
@@ -67,7 +75,7 @@ fn to_name(opcode: u8, funct3: u8, funct7: u8, funct12: u16) -> InstName {
                 _ => panic!("convert to instruction name"),
             },
             0b110 => InstName::Or("or".to_owned()),
-            0b111 => InstName::Xor("and".to_owned()),
+            0b111 => InstName::And("and".to_owned()),
             _ => panic!("convert to instruction name"),
         },
         0b000_1111 => match funct3 {
@@ -154,45 +162,115 @@ pub enum InstName {
     Csrrci(String),
 }
 
+fn to_funct(inst: u32, fmt: &InstFmt) -> (u8, u8, u16) {
+    let mut funct3: u8 = 0;
+    let mut funct7: u8 = 0;
+    let mut funct12: u16 = 0;
+    match fmt {
+        InstFmt::R | InstFmt::I | InstFmt::S | InstFmt::B => {
+            funct3 = (inst >> 12 & 0b111) as u8;
+            if let InstFmt::I | InstFmt::R = fmt {
+                funct7 = (inst >> 25 & 0b111_1111) as u8;
+            }
+            if let InstFmt::I = fmt {
+                funct12 = (inst >> 20 & 0b1111_1111_1111) as u16
+            }
+        }
+        _ => (),
+    }
+    (funct3, funct7, funct12)
+}
+
+fn to_ri(inst: u32, fmt: &InstFmt) -> (u8, u8, u8, u32) {
+    let mut rs1: u8 = 0;
+    let mut rs2: u8 = 0;
+    let mut rd: u8 = 0;
+    let mut imm: u32 = 0;
+    match fmt {
+        InstFmt::R => {
+            rs1 = (inst >> 15 & 0b1_1111) as u8;
+            rs2 = (inst >> 20 & 0b1_1111) as u8;
+            rd = (inst >> 7 & 0b1_1111) as u8;
+        }
+        InstFmt::I => {
+            rs1 = (inst >> 15 & 0b1_1111) as u8;
+            rd = (inst >> 7 & 0b1_1111) as u8;
+            imm = inst >> 20 & 0b1111_1111_1111;
+        }
+        InstFmt::S => {
+            rs1 = (inst >> 15 & 0b1_1111) as u8;
+            rs2 = (inst >> 20 & 0b1_1111) as u8;
+            imm = inst >> 25 & 0b111_1111;
+            imm <<= 5;
+            imm |= inst >> 7 & 0b1_1111;
+        }
+        InstFmt::B => {
+            rs1 = (inst >> 15 & 0b1_1111) as u8;
+            rs2 = (inst >> 20 & 0b1_1111) as u8;
+            imm = inst >> 31 & 0b1;
+            imm <<= 1;
+            imm |= inst >> 7 & 0b1;
+            imm <<= 4;
+            imm |= inst >> 8 & 0b1111;
+            imm <<= 6;
+            imm |= inst >> 25 & 0b11_1111;
+        }
+        InstFmt::U => {
+            rd = (inst >> 7 & 0b1_1111) as u8;
+            imm = inst >> 12
+        }
+        InstFmt::J => {
+            rd = (inst >> 7 & 0b1_1111) as u8;
+            imm = inst >> 31 & 0b1;
+            imm <<= 8;
+            imm |= inst >> 12 & 0b1111_1111;
+            imm <<= 1;
+            imm |= inst >> 20 & 0b1;
+            imm <<= 10;
+            imm |= inst >> 22 & 0b11_1111_1111;
+        }
+    }
+    (rs1, rs2, rd, imm)
+}
+
 pub struct Instruction {
-    opcode: u8,
-    name: InstName,
-    format: InstFmt,
-    inst: u32,
+    pub opcode: u8, // 7bit
+    pub name: InstName,
+    pub fmt: InstFmt,
+    pub rs1: u8,  // 5bit
+    pub rs2: u8,  // 5bit
+    pub rd: u8,   // 5bit
+    pub imm: u32, // 19bit
+    pub raw_inst: u32,
 }
 
 impl Instruction {
     pub fn new(inst: u32) -> Instruction {
         let opcode = (inst & 0b0111_1111) as u8;
-        let format = to_format(opcode);
-        let mut funct3: u8 = 0;
-        let mut funct7: u8 = 0;
-        let mut funct12: u16 = 0;
-        match format {
-            InstFmt::R | InstFmt::I | InstFmt::S | InstFmt::B => {
-                funct3 = (inst >> 12 & 0b111) as u8;
-                if let InstFmt::I | InstFmt::R = format {
-                    funct7 = (inst >> 25 & 0b111_1111) as u8;
-                }
-                if let InstFmt::I = format {
-                    funct12 = (inst >> 20 & 0b1111_1111_1111) as u16
-                }
-            }
-            _ => (),
-        }
+        let fmt = to_format(opcode);
+        let (funct3, funct7, funct12) = to_funct(inst, &fmt);
         let name = to_name(opcode, funct3, funct7, funct12);
+        let (rs1, rs2, rd, imm) = to_ri(inst, &fmt);
         Instruction {
             opcode,
             name,
-            format,
-            inst,
+            fmt,
+            rs1,
+            rs2,
+            rd,
+            imm,
+            raw_inst: inst,
         }
     }
 
     pub fn print(&self) {
         println!(
-            "opcode: {:b}, name: {:?}, format: {:?}, inst: {:08X}",
-            self.opcode, self.name, self.format, self.inst
+            "opcode: {:b}, name: {:?}, fmt: {:?}, raw_inst: {:08X}",
+            self.opcode, self.name, self.fmt, self.raw_inst
+        );
+        println!(
+            "rs1: {:05b}, rs2: {:05b}, rd: {:05b}, imm: {:019b}",
+            self.rs1, self.rs2, self.rd, self.imm
         );
     }
 }

@@ -8,4 +8,5 @@ fn main() {
     let mut emu = Emulator::new(cmd);
     emu.exec();
     emu.print_dram(0, 64);
+    emu.print_cpu();
 }
