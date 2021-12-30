@@ -1,5 +1,8 @@
+pub mod instructions;
+
 use crate::bus::Bus;
 use crate::conf;
+use instructions::Instruction;
 
 #[derive(Debug)]
 pub struct Cpu {
@@ -95,11 +98,25 @@ impl Cpu {
     }
 
     pub fn run(&mut self) {
-        self.load_instruction();
+        let data = self.fetch();
+
+        let inst = Instruction::new(data);
+        print!("load instruction: ");
+        inst.print();
+
+        self.exec_instruction(inst);
     }
 
-    fn load_instruction(&self) {
-        let data = self.bus.load_dram(self.pc);
-        println!("load instruction: {:08X}", data);
+    fn fetch(&self) -> u32 {
+        let mut ltl_data = self.bus.load_dram(self.pc); // little endian data
+        let mut data: u32 = 0;
+        for _ in 0..4 {
+            data <<= 8;
+            data |= ltl_data & 0xFF;
+            ltl_data >>= 8;
+        }
+        data
     }
+
+    fn exec_instruction(&self, inst: Instruction) {}
 }

@@ -1,6 +1,6 @@
-pub mod bus;
+mod bus;
 pub mod cmd;
-pub mod conf;
-pub mod cpu;
-pub mod dram;
+mod conf;
+mod cpu;
+mod dram;
 pub mod emulator;

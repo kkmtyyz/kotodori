@@ -6,6 +6,6 @@ use kotodori::emulator::Emulator;
 fn main() {
     let cmd = Command::get();
     let mut emu = Emulator::new(cmd);
-    emu.exe();
+    emu.exec();
     emu.print_dram(0, 64);
 }

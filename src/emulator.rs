@@ -31,7 +31,7 @@ impl Emulator {
         self.cpu.pdram_range(begin, end);
     }
 
-    pub fn exe(&mut self) {
+    pub fn exec(&mut self) {
         self.cpu.init();
         self.cpu.run();
     }
