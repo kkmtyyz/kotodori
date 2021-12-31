@@ -210,8 +210,8 @@ impl Cpu {
             // in dev
             //loop { // in prod
             let data = self.fetch();
-            let inst = Instruction::new(data);
-            println!("load instruction: ");
+            let inst = Instruction::decode(data);
+            println!("instruction: ");
             inst.print();
 
             self.exec_instruction(&inst);
@@ -232,13 +232,97 @@ impl Cpu {
 
     fn exec_instruction(&mut self, inst: &Instruction) {
         match inst.name {
+            InstName::Lui(_) => self.lui(inst),
+            InstName::Auipc(_) => self.auipc(inst),
+            InstName::Jal(_) => self.jal(inst),
+            InstName::Jalr(_) => self.jalr(inst),
+            InstName::Beq(_) => self.beq(inst),
+            InstName::Bne(_) => self.bne(inst),
+            InstName::Blt(_) => self.blt(inst),
+            InstName::Bge(_) => self.bge(inst),
+            InstName::Bltu(_) => self.bltu(inst),
+            InstName::Bgeu(_) => self.bgeu(inst),
+            InstName::Add(_) => self.add(inst),
             InstName::Addi(_) => self.addi(inst),
             _ => (),
         }
     }
 
+    fn lui(&mut self, inst: &Instruction) {
+        let v = (inst.imm as i32) << 12;
+        self.set_reg(inst.rd, v as u32);
+    }
+
+    fn auipc(&mut self, inst: &Instruction) {
+        let v = ((inst.imm as i32) << 12) + self.pc as i32;
+        self.set_reg(inst.rd, v as u32);
+    }
+
+    fn jal(&mut self, inst: &Instruction) {
+        if inst.rd == 0 {
+            self.ra = self.pc + 4; // ra == x1
+        } else {
+            self.set_reg(inst.rd, self.pc + 4);
+        }
+        let v = self.pc as i32 + inst.imm as i32;
+        self.pc = v as u32;
+    }
+
+    fn jalr(&mut self, inst: &Instruction) {
+        let t = self.pc + 4;
+        let v = (self.get_reg(inst.rs1) as i32 + inst.imm as i32) as u32;
+        self.pc = v as u32 & 0xFFFF_FFFE;
+
+        if inst.rd == 0 {
+            self.ra = t;
+        } else {
+            self.set_reg(inst.rd, t);
+        }
+    }
+
+    fn beq(&mut self, inst: &Instruction) {
+        if self.get_reg(inst.rs1) == self.get_reg(inst.rs2) {
+            self.pc = (self.pc as i32 + inst.imm as i32) as u32;
+        }
+    }
+
+    fn bne(&mut self, inst: &Instruction) {
+        if self.get_reg(inst.rs1) != self.get_reg(inst.rs2) {
+            self.pc = (self.pc as i32 + inst.imm as i32) as u32;
+        }
+    }
+
+    fn blt(&mut self, inst: &Instruction) {
+        if (self.get_reg(inst.rs1) as i32) < (self.get_reg(inst.rs2) as i32) {
+            self.pc = (self.pc as i32 + inst.imm as i32) as u32;
+        }
+    }
+
+    fn bge(&mut self, inst: &Instruction) {
+        if (self.get_reg(inst.rs1) as i32) >= (self.get_reg(inst.rs2) as i32) {
+            self.pc = (self.pc as i32 + inst.imm as i32) as u32;
+        }
+    }
+
+    fn bltu(&mut self, inst: &Instruction) {
+        if self.get_reg(inst.rs1) < self.get_reg(inst.rs2) {
+            self.pc = (self.pc as i32 + inst.imm as i32) as u32;
+        }
+    }
+
+    fn bgeu(&mut self, inst: &Instruction) {
+        if self.get_reg(inst.rs1) >= self.get_reg(inst.rs2) {
+            self.pc = (self.pc as i32 + inst.imm as i32) as u32;
+        }
+    }
+
+    fn add(&mut self, inst: &Instruction) {
+        let v = self.get_reg(inst.rs1) as i32 + self.get_reg(inst.rs2) as i32;
+        self.set_reg(inst.rd, v as u32);
+    }
+
     fn addi(&mut self, inst: &Instruction) {
-        let v = (self.get_reg(inst.rs1) as i32) + (inst.imm as i32);
+        let v = self.get_reg(inst.rs1) as i32 + inst.imm as i32;
         self.set_reg(inst.rd, v as u32);
     }
 }

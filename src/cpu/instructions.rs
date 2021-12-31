@@ -245,7 +245,7 @@ pub struct Instruction {
 }
 
 impl Instruction {
-    pub fn new(inst: u32) -> Instruction {
+    pub fn decode(inst: u32) -> Instruction {
         let opcode = (inst & 0b0111_1111) as u8;
         let fmt = to_format(opcode);
         let (funct3, funct7, funct12) = to_funct(inst, &fmt);
