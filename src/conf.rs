@@ -3,3 +3,5 @@
 pub const STACK_BOTTOM: u32 = 0x000F_4240;
 //pub const TEXT_START: u32 = 0x0000_03E8;
 pub const TEXT_START: u32 = 0x0000_0000;
+
+pub const MEMORY_SIZE: usize = 100_000_000;

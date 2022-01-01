@@ -1,4 +1,5 @@
 use std::env;
+use crate::conf;
 
 #[derive(Debug)]
 pub struct Command {
@@ -10,7 +11,7 @@ impl Command {
     fn init() -> Command {
         Command {
             in_f: None,
-            mem_size: Some(1_000_000),
+            mem_size: Some(conf::MEMORY_SIZE),
         }
     }
 

@@ -220,7 +220,7 @@ impl Cpu {
     }
 
     fn fetch(&self) -> u32 {
-        let mut ltl_data = self.bus.load_dram(self.pc); // little endian data
+        let mut ltl_data = self.bus.lw_dram(self.pc); // little endian data
         let mut data: u32 = 0;
         for _ in 0..4 {
             data <<= 8;
@@ -242,8 +242,33 @@ impl Cpu {
             InstName::Bge(_) => self.bge(inst),
             InstName::Bltu(_) => self.bltu(inst),
             InstName::Bgeu(_) => self.bgeu(inst),
-            InstName::Add(_) => self.add(inst),
+            InstName::Lb(_) => self.lb(inst),
+            InstName::Lh(_) => self.lh(inst),
+            InstName::Lw(_) => self.lw(inst),
+            InstName::Lbu(_) => self.lbu(inst),
+            InstName::Lhu(_) => self.lhu(inst),
+            InstName::Sb(_) => self.sb(inst),
+            InstName::Sh(_) => self.sh(inst),
+            InstName::Sw(_) => self.sw(inst),
             InstName::Addi(_) => self.addi(inst),
+            InstName::Slti(_) => self.slti(inst),
+            InstName::Sltiu(_) => self.sltiu(inst),
+            InstName::Xori(_) => self.xori(inst),
+            InstName::Ori(_) => self.ori(inst),
+            InstName::Andi(_) => self.andi(inst),
+            InstName::Slli(_) => self.slli(inst),
+            InstName::Srli(_) => self.srli(inst),
+            InstName::Srai(_) => self.srai(inst),
+            InstName::Add(_) => self.add(inst),
+            InstName::Sub(_) => self.sub(inst),
+            InstName::Sll(_) => self.sll(inst),
+            InstName::Slt(_) => self.slt(inst),
+            InstName::Sltu(_) => self.sltu(inst),
+            InstName::Xor(_) => self.xor(inst),
+            InstName::Srl(_) => self.srl(inst),
+            InstName::Sra(_) => self.sra(inst),
+            InstName::Or(_) => self.or(inst),
+            InstName::And(_) => self.and(inst),
             _ => (),
         }
     }
@@ -316,13 +341,179 @@ impl Cpu {
         }
     }
 
-    fn add(&mut self, inst: &Instruction) {
-        let v = self.get_reg(inst.rs1) as i32 + self.get_reg(inst.rs2) as i32;
+    fn lb(&mut self, inst: &Instruction) {
+        let addr = self.get_reg(inst.rs1) as i32 + inst.imm as i32;
+        let v = self.bus.lb_dram(addr as u32) as i32;
         self.set_reg(inst.rd, v as u32);
+    }
+
+    fn lh(&mut self, inst: &Instruction) {
+        let addr = self.get_reg(inst.rs1) as i32 + inst.imm as i32;
+        let v = self.bus.lh_dram(addr as u32) as i32;
+        self.set_reg(inst.rd, v as u32);
+    }
+
+    fn lw(&mut self, inst: &Instruction) {
+        let addr = self.get_reg(inst.rs1) as i32 + inst.imm as i32;
+        let v = self.bus.lw_dram(addr as u32);
+        self.set_reg(inst.rd, v);
+    }
+
+    fn lbu(&mut self, inst: &Instruction) {
+        let addr = self.get_reg(inst.rs1) as i32 + inst.imm as i32;
+        let v = self.bus.lb_dram(addr as u32);
+        self.set_reg(inst.rd, v as u32);
+    }
+
+    fn lhu(&mut self, inst: &Instruction) {
+        let addr = self.get_reg(inst.rs1) as i32 + inst.imm as i32;
+        let v = self.bus.lh_dram(addr as u32);
+        self.set_reg(inst.rd, v as u32);
+    }
+
+    fn sb(&mut self, inst: &Instruction) {
+        let v = self.get_reg(inst.rs2) as u8;
+        let addr = self.get_reg(inst.rs1) as i32 + inst.imm as i32;
+        self.bus.sb_dram(addr as u32, v);
+    }
+
+    fn sh(&mut self, inst: &Instruction) {
+        let v = self.get_reg(inst.rs2) as u16;
+        let addr = self.get_reg(inst.rs1) as i32 + inst.imm as i32;
+        self.bus.sh_dram(addr as u32, v);
+    }
+
+    fn sw(&mut self, inst: &Instruction) {
+        let v = self.get_reg(inst.rs2);
+        let addr = self.get_reg(inst.rs1) as i32 + inst.imm as i32;
+        self.bus.sw_dram(addr as u32, v);
     }
 
     fn addi(&mut self, inst: &Instruction) {
         let v = self.get_reg(inst.rs1) as i32 + inst.imm as i32;
         self.set_reg(inst.rd, v as u32);
+    }
+
+    fn slti(&mut self, inst: &Instruction) {
+        if (self.get_reg(inst.rs1) as i32) < (inst.imm as i32) {
+            self.set_reg(inst.rd, 1);
+        } else {
+            self.set_reg(inst.rd, 0);
+        }
+    }
+
+    fn sltiu(&mut self, inst: &Instruction) {
+        if self.get_reg(inst.rs1) < inst.imm {
+            self.set_reg(inst.rd, 1);
+        } else {
+            self.set_reg(inst.rd, 0);
+        }
+    }
+
+    fn xori(&mut self, inst: &Instruction) {
+        let v = (inst.imm as i32) ^ (self.get_reg(inst.rs1) as i32);
+        self.set_reg(inst.rd, v as u32);
+    }
+
+    fn ori(&mut self, inst: &Instruction) {
+        let v = (inst.imm as i32) | (self.get_reg(inst.rs1) as i32);
+        self.set_reg(inst.rd, v as u32);
+    }
+
+    fn andi(&mut self, inst: &Instruction) {
+        let v = (inst.imm as i32) & (self.get_reg(inst.rs1) as i32);
+        self.set_reg(inst.rd, v as u32);
+    }
+
+    fn slli(&mut self, inst: &Instruction) {
+        let shamt = (inst.imm & 0b11_1111) as u8;
+        if shamt & 0b10_0000 == 1 {
+            panic!("slli instruction overflow");
+        }
+        let v = self.get_reg(inst.rs1) << shamt;
+        self.set_reg(inst.rd, v);
+    }
+
+    fn srli(&mut self, inst: &Instruction) {
+        let shamt = (inst.imm & 0b11_1111) as u8;
+        if shamt & 0b10_0000 == 1 {
+            panic!("srli instruction overflow");
+        }
+        let v = self.get_reg(inst.rs1) >> shamt;
+        self.set_reg(inst.rd, v);
+    }
+
+    fn srai(&mut self, inst: &Instruction) {
+        let shamt = (inst.imm & 0b11_1111) as u8;
+        if shamt & 0b10_0000 == 1 {
+            panic!("srli instruction overflow");
+        }
+        let rs1 = self.get_reg(inst.rs1);
+        let sign = rs1 & 0x8000_0000;
+        let mut v = self.get_reg(inst.rs1) >> shamt;
+        v |= sign;
+        self.set_reg(inst.rd, v);
+    }
+
+    fn add(&mut self, inst: &Instruction) {
+        let v = self.get_reg(inst.rs1) as i32 + self.get_reg(inst.rs2) as i32;
+        self.set_reg(inst.rd, v as u32);
+    }
+
+    fn sub(&mut self, inst: &Instruction) {
+        let v = self.get_reg(inst.rs1) as i32 - self.get_reg(inst.rs2) as i32;
+        self.set_reg(inst.rd, v as u32);
+    }
+
+    fn sll(&mut self, inst: &Instruction) {
+        let shamt = self.get_reg(inst.rs2) & 0b1_1111;
+        let v = self.get_reg(inst.rs1) << shamt;
+        self.set_reg(inst.rd, v);
+    }
+
+    fn slt(&mut self, inst: &Instruction) {
+        if (self.get_reg(inst.rs1) as i32) < (self.get_reg(inst.rs2) as i32) {
+            self.set_reg(inst.rd, 1);
+        } else {
+            self.set_reg(inst.rd, 0);
+        }
+    }
+
+    fn sltu(&mut self, inst: &Instruction) {
+        if self.get_reg(inst.rs1) < self.get_reg(inst.rs2) {
+            self.set_reg(inst.rd, 1);
+        } else {
+            self.set_reg(inst.rd, 0);
+        }
+    }
+
+    fn xor(&mut self, inst: &Instruction) {
+        let v = self.get_reg(inst.rs1) ^ self.get_reg(inst.rs2);
+        self.set_reg(inst.rd, v);
+    }
+
+    fn srl(&mut self, inst: &Instruction) {
+        let shamt = self.get_reg(inst.rs2) & 0b1_1111;
+        let v = self.get_reg(inst.rs1) >> shamt;
+        self.set_reg(inst.rd, v);
+    }
+
+    fn sra(&mut self, inst: &Instruction) {
+        let shamt = self.get_reg(inst.rs2) & 0b1_1111;
+        let rs1 = self.get_reg(inst.rs1);
+        let sign = rs1 & 0x8000_0000;
+        let mut v = self.get_reg(inst.rs1) >> shamt;
+        v |= sign;
+        self.set_reg(inst.rd, v);
+    }
+
+    fn or(&mut self, inst: &Instruction) {
+        let v = self.get_reg(inst.rs1) | self.get_reg(inst.rs2);
+        self.set_reg(inst.rd, v);
+    }
+
+    fn and(&mut self, inst: &Instruction) {
+        let v = self.get_reg(inst.rs1) & self.get_reg(inst.rs2);
+        self.set_reg(inst.rd, v);
     }
 }
