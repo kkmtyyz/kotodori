@@ -22,27 +22,27 @@ impl Bus {
         self.dram.prange(begin, end);
     }
 
-    pub fn lb_dram(&self, addr: u32) -> u8 {
+    pub fn lb_dram(&self, addr: u64) -> u8 {
         self.dram.load_byte(addr)
     }
 
-    pub fn lh_dram(&self, addr: u32) -> u16 {
+    pub fn lh_dram(&self, addr: u64) -> u16 {
         self.dram.load_hword(addr)
     }
 
-    pub fn lw_dram(&self, addr: u32) -> u32 {
+    pub fn lw_dram(&self, addr: u64) -> u32 {
         self.dram.load_word(addr)
     }
 
-    pub fn sb_dram(&mut self, addr: u32, data: u8) {
+    pub fn sb_dram(&mut self, addr: u64, data: u8) {
         self.dram.store_byte(addr, data);
     }
 
-    pub fn sh_dram(&mut self, addr: u32, data: u16) {
+    pub fn sh_dram(&mut self, addr: u64, data: u16) {
         self.dram.store_hword(addr, data);
     }
 
-    pub fn sw_dram(&mut self, addr: u32, data: u32) {
+    pub fn sw_dram(&mut self, addr: u64, data: u32) {
         self.dram.store_word(addr, data);
     }
 }

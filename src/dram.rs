@@ -97,14 +97,14 @@ impl Dram {
         }
     }
 
-    pub fn load_byte(&self, addr: u32) -> u8 {
+    pub fn load_byte(&self, addr: u64) -> u8 {
         match self.memory.get(addr as usize) {
             Some(data) => *data,
             None => panic!("access to invalid address"),
         }
     }
 
-    pub fn load_hword(&self, begin: u32) -> u16 {
+    pub fn load_hword(&self, begin: u64) -> u16 {
         let mut res: u16 = 0;
         for i in begin..begin + 2 {
             match self.memory.get(i as usize) {
@@ -118,7 +118,7 @@ impl Dram {
         res
     }
 
-    pub fn load_word(&self, addr: u32) -> u32 {
+    pub fn load_word(&self, addr: u64) -> u32 {
         let mut res: u32 = 0;
         for i in addr..addr + 4 {
             match self.memory.get(i as usize) {
@@ -132,17 +132,17 @@ impl Dram {
         res
     }
 
-    pub fn store_byte(&mut self, addr: u32, data: u8) {
+    pub fn store_byte(&mut self, addr: u64, data: u8) {
         self.memory[addr as usize] = data;
     }
 
-    pub fn store_hword(&mut self, addr: u32, data: u16) {
+    pub fn store_hword(&mut self, addr: u64, data: u16) {
         self.memory[addr as usize] = (data & 0xF) as u8;
         let addr = addr + 1;
         self.memory[addr as usize] = (data >> 8) as u8;
     }
 
-    pub fn store_word(&mut self, addr: u32, data: u32) {
+    pub fn store_word(&mut self, addr: u64, data: u32) {
         self.memory[addr as usize] = (data & 0xF) as u8;
         let addr = addr + 1;
         self.memory[addr as usize] = ((data >> 8) & 0xF) as u8;
