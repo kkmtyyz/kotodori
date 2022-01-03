@@ -404,6 +404,132 @@ impl Cpu {
         }
     }
 
+    pub fn get_csr(&self, reg: u16) -> u64 {
+        match reg {
+            // supervisor-level csr
+            0x100 => self.sstatus,
+            0x104 => self.sie,
+            0x105 => self.stvec,
+            0x106 => self.scounteren,
+            0x10A => self.senvcfg,
+            0x140 => self.sscratch,
+            0x141 => self.sepc,
+            0x142 => self.scause,
+            0x143 => self.stval,
+            0x144 => self.sip,
+            0x180 => self.satp,
+            0x5A8 => self.scontext,
+
+            // machine-level csr
+            0xF11 => self.mvendorid,
+            0xF12 => self.marchid,
+            0xF13 => self.mimpid,
+            0xF14 => self.mhartid,
+            0xF15 => self.mconfigptr,
+            0x300 => self.mstatus,
+            0x301 => self.misa,
+            0x302 => self.medeleg,
+            0x303 => self.mideleg,
+            0x304 => self.mie,
+            0x305 => self.mtvec,
+            0x306 => self.mcounteren,
+            0x310 => self.mstatush,
+            0x340 => self.mscratch,
+            0x341 => self.mepc,
+            0x342 => self.mcause,
+            0x343 => self.mtval,
+            0x344 => self.mip,
+            0x34A => self.mtinst,
+            0x34B => self.mtval2,
+            0x30A => self.menvcfg,
+            0x31A => self.menvcfgh,
+            0x747 => self.mseccfg,
+            0x757 => self.mseccfgh,
+            0x3A0 => self.pmpcfg0,
+            0x3A1 => self.pmpcfg1,
+            0x3A2 => self.pmpcfg2,
+            0x3A3 => self.pmpcfg3,
+            0x3A4 => self.pmpcfg4,
+            0x3A5 => self.pmpcfg5,
+            0x3A6 => self.pmpcfg6,
+            0x3A7 => self.pmpcfg7,
+            0x3A8 => self.pmpcfg8,
+            0x3A9 => self.pmpcfg9,
+            0x3AA => self.pmpcfg10,
+            0x3AB => self.pmpcfg11,
+            0x3AC => self.pmpcfg12,
+            0x3AD => self.pmpcfg13,
+            0x3AE => self.pmpcfg14,
+            0x3AF => self.pmpcfg15,
+            0x3B0 => self.pmpaddr0,
+            0x3B1 => self.pmpaddr1,
+            0x3B2 => self.pmpaddr2,
+            0x3B3 => self.pmpaddr3,
+            0x3B4 => self.pmpaddr4,
+            0x3B5 => self.pmpaddr5,
+            0x3B6 => self.pmpaddr6,
+            0x3B7 => self.pmpaddr7,
+            0x3B8 => self.pmpaddr8,
+            0x3B9 => self.pmpaddr9,
+            0x3BA => self.pmpaddr10,
+            0x3BB => self.pmpaddr11,
+            0x3BC => self.pmpaddr12,
+            0x3BD => self.pmpaddr13,
+            0x3BE => self.pmpaddr14,
+            0x3BF => self.pmpaddr15,
+            0x3C0 => self.pmpaddr16,
+            0x3C1 => self.pmpaddr17,
+            0x3C2 => self.pmpaddr18,
+            0x3C3 => self.pmpaddr19,
+            0x3C4 => self.pmpaddr20,
+            0x3C5 => self.pmpaddr21,
+            0x3C6 => self.pmpaddr22,
+            0x3C7 => self.pmpaddr23,
+            0x3C8 => self.pmpaddr24,
+            0x3C9 => self.pmpaddr25,
+            0x3CA => self.pmpaddr26,
+            0x3CB => self.pmpaddr27,
+            0x3CC => self.pmpaddr28,
+            0x3CD => self.pmpaddr29,
+            0x3CE => self.pmpaddr30,
+            0x3CF => self.pmpaddr31,
+            0x3D0 => self.pmpaddr32,
+            0x3D1 => self.pmpaddr33,
+            0x3D2 => self.pmpaddr34,
+            0x3D3 => self.pmpaddr35,
+            0x3D4 => self.pmpaddr36,
+            0x3D5 => self.pmpaddr37,
+            0x3D6 => self.pmpaddr38,
+            0x3D7 => self.pmpaddr39,
+            0x3D8 => self.pmpaddr40,
+            0x3D9 => self.pmpaddr41,
+            0x3DA => self.pmpaddr42,
+            0x3DB => self.pmpaddr43,
+            0x3DC => self.pmpaddr44,
+            0x3DD => self.pmpaddr45,
+            0x3DE => self.pmpaddr46,
+            0x3DF => self.pmpaddr47,
+            0x3E0 => self.pmpaddr48,
+            0x3E1 => self.pmpaddr49,
+            0x3E2 => self.pmpaddr50,
+            0x3E3 => self.pmpaddr51,
+            0x3E4 => self.pmpaddr52,
+            0x3E5 => self.pmpaddr53,
+            0x3E6 => self.pmpaddr54,
+            0x3E7 => self.pmpaddr55,
+            0x3E8 => self.pmpaddr56,
+            0x3E9 => self.pmpaddr57,
+            0x3EA => self.pmpaddr58,
+            0x3EB => self.pmpaddr59,
+            0x3EC => self.pmpaddr60,
+            0x3ED => self.pmpaddr61,
+            0x3EE => self.pmpaddr62,
+            0x3EF => self.pmpaddr63,
+
+            _ => panic!("invalid register"),
+        }
+    }
+
     pub fn set_reg(&mut self, reg: u8, value: u64) {
         match reg {
             0b0_0001 => self.ra = value,
@@ -437,6 +563,132 @@ impl Cpu {
             0b1_1101 => self.t4 = value,
             0b1_1110 => self.t5 = value,
             0b1_1111 => self.t6 = value,
+            _ => panic!("invalid register"),
+        }
+    }
+
+    pub fn set_csr(&mut self, reg: u16, value: u64) {
+        match reg {
+            // supervisor-level csr
+            0x100 => self.sstatus = value,
+            0x104 => self.sie = value,
+            0x105 => self.stvec = value,
+            0x106 => self.scounteren = value,
+            0x10A => self.senvcfg = value,
+            0x140 => self.sscratch = value,
+            0x141 => self.sepc = value,
+            0x142 => self.scause = value,
+            0x143 => self.stval = value,
+            0x144 => self.sip = value,
+            0x180 => self.satp = value,
+            0x5A8 => self.scontext = value,
+
+            // machine-level csr
+            0xF11 => self.mvendorid = value,
+            0xF12 => self.marchid = value,
+            0xF13 => self.mimpid = value,
+            0xF14 => self.mhartid = value,
+            0xF15 => self.mconfigptr = value,
+            0x300 => self.mstatus = value,
+            0x301 => self.misa = value,
+            0x302 => self.medeleg = value,
+            0x303 => self.mideleg = value,
+            0x304 => self.mie = value,
+            0x305 => self.mtvec = value,
+            0x306 => self.mcounteren = value,
+            0x310 => self.mstatush = value,
+            0x340 => self.mscratch = value,
+            0x341 => self.mepc = value,
+            0x342 => self.mcause = value,
+            0x343 => self.mtval = value,
+            0x344 => self.mip = value,
+            0x34A => self.mtinst = value,
+            0x34B => self.mtval2 = value,
+            0x30A => self.menvcfg = value,
+            0x31A => self.menvcfgh = value,
+            0x747 => self.mseccfg = value,
+            0x757 => self.mseccfgh = value,
+            0x3A0 => self.pmpcfg0 = value,
+            0x3A1 => self.pmpcfg1 = value,
+            0x3A2 => self.pmpcfg2 = value,
+            0x3A3 => self.pmpcfg3 = value,
+            0x3A4 => self.pmpcfg4 = value,
+            0x3A5 => self.pmpcfg5 = value,
+            0x3A6 => self.pmpcfg6 = value,
+            0x3A7 => self.pmpcfg7 = value,
+            0x3A8 => self.pmpcfg8 = value,
+            0x3A9 => self.pmpcfg9 = value,
+            0x3AA => self.pmpcfg10 = value,
+            0x3AB => self.pmpcfg11 = value,
+            0x3AC => self.pmpcfg12 = value,
+            0x3AD => self.pmpcfg13 = value,
+            0x3AE => self.pmpcfg14 = value,
+            0x3AF => self.pmpcfg15 = value,
+            0x3B0 => self.pmpaddr0 = value,
+            0x3B1 => self.pmpaddr1 = value,
+            0x3B2 => self.pmpaddr2 = value,
+            0x3B3 => self.pmpaddr3 = value,
+            0x3B4 => self.pmpaddr4 = value,
+            0x3B5 => self.pmpaddr5 = value,
+            0x3B6 => self.pmpaddr6 = value,
+            0x3B7 => self.pmpaddr7 = value,
+            0x3B8 => self.pmpaddr8 = value,
+            0x3B9 => self.pmpaddr9 = value,
+            0x3BA => self.pmpaddr10 = value,
+            0x3BB => self.pmpaddr11 = value,
+            0x3BC => self.pmpaddr12 = value,
+            0x3BD => self.pmpaddr13 = value,
+            0x3BE => self.pmpaddr14 = value,
+            0x3BF => self.pmpaddr15 = value,
+            0x3C0 => self.pmpaddr16 = value,
+            0x3C1 => self.pmpaddr17 = value,
+            0x3C2 => self.pmpaddr18 = value,
+            0x3C3 => self.pmpaddr19 = value,
+            0x3C4 => self.pmpaddr20 = value,
+            0x3C5 => self.pmpaddr21 = value,
+            0x3C6 => self.pmpaddr22 = value,
+            0x3C7 => self.pmpaddr23 = value,
+            0x3C8 => self.pmpaddr24 = value,
+            0x3C9 => self.pmpaddr25 = value,
+            0x3CA => self.pmpaddr26 = value,
+            0x3CB => self.pmpaddr27 = value,
+            0x3CC => self.pmpaddr28 = value,
+            0x3CD => self.pmpaddr29 = value,
+            0x3CE => self.pmpaddr30 = value,
+            0x3CF => self.pmpaddr31 = value,
+            0x3D0 => self.pmpaddr32 = value,
+            0x3D1 => self.pmpaddr33 = value,
+            0x3D2 => self.pmpaddr34 = value,
+            0x3D3 => self.pmpaddr35 = value,
+            0x3D4 => self.pmpaddr36 = value,
+            0x3D5 => self.pmpaddr37 = value,
+            0x3D6 => self.pmpaddr38 = value,
+            0x3D7 => self.pmpaddr39 = value,
+            0x3D8 => self.pmpaddr40 = value,
+            0x3D9 => self.pmpaddr41 = value,
+            0x3DA => self.pmpaddr42 = value,
+            0x3DB => self.pmpaddr43 = value,
+            0x3DC => self.pmpaddr44 = value,
+            0x3DD => self.pmpaddr45 = value,
+            0x3DE => self.pmpaddr46 = value,
+            0x3DF => self.pmpaddr47 = value,
+            0x3E0 => self.pmpaddr48 = value,
+            0x3E1 => self.pmpaddr49 = value,
+            0x3E2 => self.pmpaddr50 = value,
+            0x3E3 => self.pmpaddr51 = value,
+            0x3E4 => self.pmpaddr52 = value,
+            0x3E5 => self.pmpaddr53 = value,
+            0x3E6 => self.pmpaddr54 = value,
+            0x3E7 => self.pmpaddr55 = value,
+            0x3E8 => self.pmpaddr56 = value,
+            0x3E9 => self.pmpaddr57 = value,
+            0x3EA => self.pmpaddr58 = value,
+            0x3EB => self.pmpaddr59 = value,
+            0x3EC => self.pmpaddr60 = value,
+            0x3ED => self.pmpaddr61 = value,
+            0x3EE => self.pmpaddr62 = value,
+            0x3EF => self.pmpaddr63 = value,
+
             _ => panic!("invalid register"),
         }
     }
@@ -512,12 +764,22 @@ impl Cpu {
             InstName::And(_) => self.and(inst),
             InstName::Fence(_) => self.fence(inst),
             InstName::FenceI(_) => self.fence_i(inst),
+            InstName::Ecall(_) => self.ecall(inst),
+            InstName::Ebreak(_) => self.ebreak(inst),
             InstName::Csrrw(_) => self.csrrw(inst),
             InstName::Csrrs(_) => self.csrrs(inst),
             InstName::Csrrc(_) => self.csrrc(inst),
             InstName::Csrrwi(_) => self.csrrwi(inst),
             InstName::Csrrsi(_) => self.csrrsi(inst),
             InstName::Csrrci(_) => self.csrrci(inst),
+            InstName::Mul(_) => self.mul(inst),
+            InstName::Mulh(_) => self.mulh(inst),
+            InstName::Mulhsu(_) => self.mulhsu(inst),
+            InstName::Mulhu(_) => self.mulhu(inst),
+            InstName::Div(_) => self.div(inst),
+            InstName::Divu(_) => self.divu(inst),
+            InstName::Rem(_) => self.rem(inst),
+            InstName::Remu(_) => self.remu(inst),
             _ => (),
         }
     }
@@ -780,21 +1042,91 @@ impl Cpu {
         // Implement when needed.
     }
 
+    fn ebreak(&mut self, inst: &Instruction) {
+        // Implement when needed.
+    }
+
     fn csrrw(&mut self, inst: &Instruction) {
+        let csr = inst.imm as u16;
+        let t = self.get_csr(csr);
+        self.set_csr(csr, self.get_reg(inst.rs1));
+        self.set_reg(inst.rd, t);
     }
 
     fn csrrs(&mut self, inst: &Instruction) {
+        let csr = inst.imm as u16;
+        let t = self.get_csr(csr);
+        self.set_csr(csr, t | self.get_reg(inst.rs1));
+        self.set_reg(inst.rd, t);
     }
 
     fn csrrc(&mut self, inst: &Instruction) {
+        let csr = inst.imm as u16;
+        let t = self.get_csr(csr);
+        self.set_csr(csr, t & !self.get_reg(inst.rs1));
+        self.set_reg(inst.rd, t);
     }
 
     fn csrrwi(&mut self, inst: &Instruction) {
+        let csr = inst.imm as u16;
+        self.set_reg(inst.rd, self.get_csr(csr));
+        let zimm = inst.rs1;
+        self.set_csr(csr, zimm as u64);
     }
 
     fn csrrsi(&mut self, inst: &Instruction) {
+        let csr = inst.imm as u16;
+        let t = self.get_csr(csr);
+        let zimm = inst.rs1;
+        self.set_csr(csr, t | zimm as u64);
+        self.set_reg(inst.rd, t);
     }
 
     fn csrrci(&mut self, inst: &Instruction) {
+        let csr = inst.imm as u16;
+        let t = self.get_csr(csr);
+        let zimm = inst.rs1;
+        self.set_csr(csr, t & !(zimm as u64));
+        self.set_reg(inst.rd, t);
+    }
+
+    fn mul(&mut self , inst: &Instruction) {
+        let v = self.get_reg(inst.rs1) * self.get_reg(inst.rs2);
+        self.set_reg(inst.rd, v);
+    }
+
+    fn mulh(&mut self , inst: &Instruction) {
+        let v = (self.get_reg(inst.rs1) as i64) * (self.get_reg(inst.rs2) as i64);
+        self.set_reg(inst.rd, (v >> 32) as u64);
+    }
+
+    fn mulhsu(&mut self , inst: &Instruction) {
+        let v = ((self.get_reg(inst.rs1) as i64) as u64) * self.get_reg(inst.rs2);
+        self.set_reg(inst.rd, (v >> 32) as u64);
+    }
+
+    fn mulhu(&mut self , inst: &Instruction) {
+        let v = self.get_reg(inst.rs1) * self.get_reg(inst.rs2);
+        self.set_reg(inst.rd, (v >> 32) as u64);
+    }
+
+    fn div(&mut self , inst: &Instruction) {
+        let v = (self.get_reg(inst.rs1) as i64) / (self.get_reg(inst.rs2) as i64);
+        self.set_reg(inst.rd, v as u64);
+    }
+
+    fn divu(&mut self , inst: &Instruction) {
+        let v = self.get_reg(inst.rs1) / self.get_reg(inst.rs2);
+        self.set_reg(inst.rd, v);
+    }
+
+    fn rem(&mut self , inst: &Instruction) {
+        let v = (self.get_reg(inst.rs1) as i64) % (self.get_reg(inst.rs2) as i64);
+        self.set_reg(inst.rd, v as u64);
+    }
+
+    fn remu(&mut self , inst: &Instruction) {
+        let v = self.get_reg(inst.rs1) % self.get_reg(inst.rs2);
+        self.set_reg(inst.rd, v);
     }
 }

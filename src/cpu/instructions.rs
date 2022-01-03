@@ -63,19 +63,45 @@ fn to_name(opcode: u8, funct3: u8, funct7: u8, funct12: u16) -> InstName {
             0b000 => match funct7 {
                 0b000_0000 => InstName::Add("add".to_owned()),
                 0b010_0000 => InstName::Sub("sub".to_owned()),
+                0b000_0001 => InstName::Mul("mul".to_owned()),
                 _ => panic!("convert to instruction name"),
             },
-            0b001 => InstName::Sll("sll".to_owned()),
-            0b010 => InstName::Slt("slt".to_owned()),
-            0b011 => InstName::Sltu("sltu".to_owned()),
-            0b100 => InstName::Xor("xor".to_owned()),
+            0b001 => match funct7 {
+                0b000_0000 => InstName::Sll("sll".to_owned()),
+                0b000_0001 => InstName::Mulh("mulh".to_owned()),
+                _ => panic!("convert to instruction name"),
+            }
+            0b010 => match funct7 {
+                0b000_0000 => InstName::Slt("slt".to_owned()),
+                0b000_0001 => InstName::Mulhsu("mulhsu".to_owned()),
+                _ => panic!("convert to instruction name"),
+            }
+            0b011 => match funct7 {
+                0b000_0000 => InstName::Sltu("sltu".to_owned()),
+                0b000_0001 => InstName::Mulhu("mulhu".to_owned()),
+                _ => panic!("convert to instruction name"),
+            }
+            0b100 => match funct7 {
+                0b000_0000 => InstName::Xor("xor".to_owned()),
+                0b000_0001 => InstName::Div("div".to_owned()),
+                _ => panic!("convert to instruction name"),
+            }
             0b101 => match funct7 {
                 0b000_0000 => InstName::Srl("srl".to_owned()),
                 0b010_0000 => InstName::Sra("sra".to_owned()),
+                0b000_0001 => InstName::Divu("divu".to_owned()),
                 _ => panic!("convert to instruction name"),
             },
-            0b110 => InstName::Or("or".to_owned()),
-            0b111 => InstName::And("and".to_owned()),
+            0b110 => match funct7 {
+                0b000_0000 => InstName::Or("or".to_owned()),
+                0b000_0001 => InstName::Rem("rem".to_owned()),
+                _ => panic!("convert to instruction name"),
+            }
+            0b111 => match funct7 {
+                0b000_0000 => InstName::And("and".to_owned()),
+                0b000_0001 => InstName::Remu("remu".to_owned()),
+                _ => panic!("convert to instruction name"),
+            }
             _ => panic!("convert to instruction name"),
         },
         0b000_1111 => match funct3 {
@@ -160,6 +186,14 @@ pub enum InstName {
     Csrrwi(String),
     Csrrsi(String),
     Csrrci(String),
+    Mul(String),
+    Mulh(String),
+    Mulhsu(String),
+    Mulhu(String),
+    Div(String),
+    Divu(String),
+    Rem(String),
+    Remu(String),
 }
 
 fn to_funct(inst: u32, fmt: &InstFmt) -> (u8, u8, u16) {
