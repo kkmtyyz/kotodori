@@ -8,6 +8,7 @@ use instructions::Instruction;
 #[derive(Debug)]
 pub struct Cpu {
     bus: Bus,
+    mem_reserved_w: Vec<u8>,
 
     // registers
     zero: u64,
@@ -167,9 +168,11 @@ pub struct Cpu {
 }
 
 impl Cpu {
-    pub fn new(bus: Bus) -> Cpu {
+    pub fn new(bus: Bus, mem_size: usize) -> Cpu {
         Cpu {
             bus,
+            mem_reserved_w: vec![0; mem_size / 32],
+
             zero: 0,
             ra: 0,
             sp: 0,
@@ -327,39 +330,39 @@ impl Cpu {
     }
 
     pub fn print(&self) {
-        println!( "zero:0x{:016X}, 0b{:064b}", self.zero, self.zero);
-        println!( "ra:0x{:016X}, 0b{:064b}", self.ra, self.ra);
-        println!( "sp:0x{:016X}, 0b{:064b}", self.sp, self.sp);
-        println!( "gp:0x{:016X}, 0b{:064b}", self.gp, self.gp);
-        println!( "tp:0x{:016X}, 0b{:064b}", self.tp, self.tp);
-        println!( "t0:0x{:016X}, 0b{:064b}", self.t0, self.t0);
-        println!( "t1:0x{:016X}, 0b{:064b}", self.t1, self.t1);
-        println!( "t2:0x{:016X}, 0b{:064b}", self.t2, self.t2);
-        println!( "fp:0x{:016X}, 0b{:064b}", self.fp, self.fp);
-        println!( "s1:0x{:016X}, 0b{:064b}", self.s1, self.s1);
-        println!( "a0:0x{:016X}, 0b{:064b}", self.a0, self.a0);
-        println!( "a1:0x{:016X}, 0b{:064b}", self.a1, self.a1);
-        println!( "a6:0x{:016X}, 0b{:064b}", self.a6, self.a6);
-        println!( "a7:0x{:016X}, 0b{:064b}", self.a7, self.a7);
-        println!( "a2:0x{:016X}, 0b{:064b}", self.a2, self.a2);
-        println!( "a5:0x{:016X}, 0b{:064b}", self.a5, self.a5);
-        println!( "a6:0x{:016X}, 0b{:064b}", self.a6, self.a6);
-        println!( "a7:0x{:016X}, 0b{:064b}", self.a7, self.a7);
-        println!( "s2:0x{:016X}, 0b{:064b}", self.s5, self.s5);
-        println!( "s3:0x{:016X}, 0b{:064b}", self.s3, self.s3);
-        println!( "s4:0x{:016X}, 0b{:064b}", self.s4, self.s4);
-        println!( "s5:0x{:016X}, 0b{:064b}", self.s5, self.s5);
-        println!( "s6:0x{:016X}, 0b{:064b}", self.s6, self.s6);
-        println!( "s7:0x{:016X}, 0b{:064b}", self.s7, self.s7);
-        println!( "s8:0x{:016X}, 0b{:064b}", self.s8, self.s8);
-        println!( "s9:0x{:016X}, 0b{:064b}", self.s9, self.s9);
-        println!( "s10:0x{:016X}, 0b{:064b}", self.s10, self.s10);
-        println!( "s11:0x{:016X}, 0b{:064b}", self.s11, self.s11);
-        println!( "t3:0x{:016X}, 0b{:064b}", self.t3, self.t3);
-        println!( "t4:0x{:016X}, 0b{:064b}", self.t4, self.t4);
-        println!( "t5:0x{:016X}, 0b{:064b}", self.t5, self.t5);
-        println!( "t6:0x{:016X}, 0b{:064b}", self.t6, self.t6);
-        println!( "pc:0x{:016X}, 0b{:064b}", self.pc, self.pc);
+        println!("zero:0x{:016X}, 0b{:064b}", self.zero, self.zero);
+        println!("ra:0x{:016X}, 0b{:064b}", self.ra, self.ra);
+        println!("sp:0x{:016X}, 0b{:064b}", self.sp, self.sp);
+        println!("gp:0x{:016X}, 0b{:064b}", self.gp, self.gp);
+        println!("tp:0x{:016X}, 0b{:064b}", self.tp, self.tp);
+        println!("t0:0x{:016X}, 0b{:064b}", self.t0, self.t0);
+        println!("t1:0x{:016X}, 0b{:064b}", self.t1, self.t1);
+        println!("t2:0x{:016X}, 0b{:064b}", self.t2, self.t2);
+        println!("fp:0x{:016X}, 0b{:064b}", self.fp, self.fp);
+        println!("s1:0x{:016X}, 0b{:064b}", self.s1, self.s1);
+        println!("a0:0x{:016X}, 0b{:064b}", self.a0, self.a0);
+        println!("a1:0x{:016X}, 0b{:064b}", self.a1, self.a1);
+        println!("a6:0x{:016X}, 0b{:064b}", self.a6, self.a6);
+        println!("a7:0x{:016X}, 0b{:064b}", self.a7, self.a7);
+        println!("a2:0x{:016X}, 0b{:064b}", self.a2, self.a2);
+        println!("a5:0x{:016X}, 0b{:064b}", self.a5, self.a5);
+        println!("a6:0x{:016X}, 0b{:064b}", self.a6, self.a6);
+        println!("a7:0x{:016X}, 0b{:064b}", self.a7, self.a7);
+        println!("s2:0x{:016X}, 0b{:064b}", self.s5, self.s5);
+        println!("s3:0x{:016X}, 0b{:064b}", self.s3, self.s3);
+        println!("s4:0x{:016X}, 0b{:064b}", self.s4, self.s4);
+        println!("s5:0x{:016X}, 0b{:064b}", self.s5, self.s5);
+        println!("s6:0x{:016X}, 0b{:064b}", self.s6, self.s6);
+        println!("s7:0x{:016X}, 0b{:064b}", self.s7, self.s7);
+        println!("s8:0x{:016X}, 0b{:064b}", self.s8, self.s8);
+        println!("s9:0x{:016X}, 0b{:064b}", self.s9, self.s9);
+        println!("s10:0x{:016X}, 0b{:064b}", self.s10, self.s10);
+        println!("s11:0x{:016X}, 0b{:064b}", self.s11, self.s11);
+        println!("t3:0x{:016X}, 0b{:064b}", self.t3, self.t3);
+        println!("t4:0x{:016X}, 0b{:064b}", self.t4, self.t4);
+        println!("t5:0x{:016X}, 0b{:064b}", self.t5, self.t5);
+        println!("t6:0x{:016X}, 0b{:064b}", self.t6, self.t6);
+        println!("pc:0x{:016X}, 0b{:064b}", self.pc, self.pc);
     }
 
     pub fn pdram_range(&self, begin: usize, end: usize) {
@@ -780,6 +783,17 @@ impl Cpu {
             InstName::Divu(_) => self.divu(inst),
             InstName::Rem(_) => self.rem(inst),
             InstName::Remu(_) => self.remu(inst),
+            InstName::LrW(_) => self.lr_w(inst),
+            InstName::ScW(_) => self.sc_w(inst),
+            InstName::AmoswapW(_) => self.amoswap_w(inst),
+            InstName::AmoaddW(_) => self.amoadd_w(inst),
+            InstName::AmoxorW(_) => self.amoxor_w(inst),
+            InstName::AmoandW(_) => self.amoand_w(inst),
+            InstName::AmoorW(_) => self.amoor_w(inst),
+            InstName::AmominW(_) => self.amomin_w(inst),
+            InstName::AmomaxW(_) => self.amomax_w(inst),
+            InstName::AmominuW(_) => self.amominu_w(inst),
+            InstName::AmomaxuW(_) => self.amomaxu_w(inst),
             _ => (),
         }
     }
@@ -1090,43 +1104,82 @@ impl Cpu {
         self.set_reg(inst.rd, t);
     }
 
-    fn mul(&mut self , inst: &Instruction) {
+    fn mul(&mut self, inst: &Instruction) {
         let v = self.get_reg(inst.rs1) * self.get_reg(inst.rs2);
         self.set_reg(inst.rd, v);
     }
 
-    fn mulh(&mut self , inst: &Instruction) {
+    fn mulh(&mut self, inst: &Instruction) {
         let v = (self.get_reg(inst.rs1) as i64) * (self.get_reg(inst.rs2) as i64);
         self.set_reg(inst.rd, (v >> 32) as u64);
     }
 
-    fn mulhsu(&mut self , inst: &Instruction) {
+    fn mulhsu(&mut self, inst: &Instruction) {
         let v = ((self.get_reg(inst.rs1) as i64) as u64) * self.get_reg(inst.rs2);
         self.set_reg(inst.rd, (v >> 32) as u64);
     }
 
-    fn mulhu(&mut self , inst: &Instruction) {
+    fn mulhu(&mut self, inst: &Instruction) {
         let v = self.get_reg(inst.rs1) * self.get_reg(inst.rs2);
         self.set_reg(inst.rd, (v >> 32) as u64);
     }
 
-    fn div(&mut self , inst: &Instruction) {
+    fn div(&mut self, inst: &Instruction) {
         let v = (self.get_reg(inst.rs1) as i64) / (self.get_reg(inst.rs2) as i64);
         self.set_reg(inst.rd, v as u64);
     }
 
-    fn divu(&mut self , inst: &Instruction) {
+    fn divu(&mut self, inst: &Instruction) {
         let v = self.get_reg(inst.rs1) / self.get_reg(inst.rs2);
         self.set_reg(inst.rd, v);
     }
 
-    fn rem(&mut self , inst: &Instruction) {
+    fn rem(&mut self, inst: &Instruction) {
         let v = (self.get_reg(inst.rs1) as i64) % (self.get_reg(inst.rs2) as i64);
         self.set_reg(inst.rd, v as u64);
     }
 
-    fn remu(&mut self , inst: &Instruction) {
+    fn remu(&mut self, inst: &Instruction) {
         let v = self.get_reg(inst.rs1) % self.get_reg(inst.rs2);
         self.set_reg(inst.rd, v);
     }
+
+    fn lr_w(&mut self, inst: &Instruction) {
+        let addr = self.get_reg(inst.rs1);
+        let data = self.bus.lw_dram(addr) as i64;
+        self.set_reg(inst.rd, data as u64);
+
+        if addr % 4 != 0 {
+            panic!("invalid alignment");
+        }
+
+        let idx = addr / 8;
+        match self.mem_reserved_w.get(idx as usize) {
+            Some(rsv) => {
+                let rsv = (*rsv as usize) | (0xF0 >> (addr % 8));
+                self.mem_reserved_w[idx as usize] = rsv as u8;
+            }
+            None => panic!("invalid memory reserved word index")
+        }
+    }
+
+    fn sc_w(&mut self, inst: &Instruction) {}
+
+    fn amoswap_w(&mut self, inst: &Instruction) {}
+
+    fn amoadd_w(&mut self, inst: &Instruction) {}
+
+    fn amoxor_w(&mut self, inst: &Instruction) {}
+
+    fn amoand_w(&mut self, inst: &Instruction) {}
+
+    fn amoor_w(&mut self, inst: &Instruction) {}
+
+    fn amomin_w(&mut self, inst: &Instruction) {}
+
+    fn amomax_w(&mut self, inst: &Instruction) {}
+
+    fn amominu_w(&mut self, inst: &Instruction) {}
+
+    fn amomaxu_w(&mut self, inst: &Instruction) {}
 }

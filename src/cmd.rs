@@ -1,5 +1,5 @@
-use std::env;
 use crate::conf;
+use std::env;
 
 #[derive(Debug)]
 pub struct Command {
