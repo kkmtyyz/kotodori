@@ -20,7 +20,9 @@ impl Emulator {
 
         let bus = Bus::new(dram);
 
-        Emulator { cpu: Cpu::new(bus, cmd.mem_size.unwrap()) }
+        Emulator {
+            cpu: Cpu::new(bus, cmd.mem_size.unwrap()),
+        }
     }
 
     pub fn print_cpu(&self) {

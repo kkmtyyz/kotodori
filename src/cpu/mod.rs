@@ -1148,22 +1148,61 @@ impl Cpu {
         let addr = self.get_reg(inst.rs1);
         let data = self.bus.lw_dram(addr) as i64;
         self.set_reg(inst.rd, data as u64);
+        self.reserve_mem(addr);
+    }
 
+    fn reserve_mem(&mut self, addr: u64) {
         if addr % 4 != 0 {
             panic!("invalid alignment");
         }
 
-        let idx = addr / 8;
+        let idx = addr / 32;
         match self.mem_reserved_w.get(idx as usize) {
             Some(rsv) => {
-                let rsv = (*rsv as usize) | (0xF0 >> (addr % 8));
+                let rsv = (*rsv as usize) | (0x80 >> ((addr - idx * 32) / 4));
                 self.mem_reserved_w[idx as usize] = rsv as u8;
             }
-            None => panic!("invalid memory reserved word index")
+            None => panic!("invalid memory reserved word index"),
         }
     }
 
-    fn sc_w(&mut self, inst: &Instruction) {}
+    fn sc_w(&mut self, inst: &Instruction) {
+        let addr = self.get_reg(inst.rs1);
+        self.invalidate_reservation_mem(addr);
+        let data = self.get_reg(inst.rs2) as u32;
+
+        if self.check_reservation_mem(addr) {
+            panic!("memory is not reserved");
+        }
+
+        self.bus.sw_dram(addr, data);
+        self.set_reg(inst.rd, 0);
+    }
+
+    fn check_reservation_mem(&self, addr: u64) -> bool {
+        if addr % 4 != 0 {
+            panic!("invalid alinement");
+        }
+
+        let idx = addr / 32;
+        let rsv = self.mem_reserved_w.get(idx as usize).unwrap();
+        let rsv = (*rsv as usize) & (0x80 >> ((addr - idx * 32) / 4));
+        if rsv == 0 {
+            return false;
+        }
+        true
+    }
+
+    fn invalidate_reservation_mem(&mut self, addr: u64) {
+        if addr & 4 != 0 {
+            panic!("invalid alinement");
+        }
+
+        let idx = addr / 32;
+        let rsv = self.mem_reserved_w.get(idx as usize).unwrap();
+        let rsv = (*rsv as usize) & !(0x80 >> ((addr - idx * 32) / 4));
+        self.mem_reserved_w[idx as usize] = rsv as u8;
+    }
 
     fn amoswap_w(&mut self, inst: &Instruction) {}
 
