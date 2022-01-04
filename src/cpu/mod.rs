@@ -1168,10 +1168,10 @@ impl Cpu {
 
     fn sc_w(&mut self, inst: &Instruction) {
         let addr = self.get_reg(inst.rs1);
-        self.invalidate_reservation_mem(addr);
+        self.invalidate_mem_reservation(addr);
         let data = self.get_reg(inst.rs2) as u32;
 
-        if self.check_reservation_mem(addr) {
+        if self.check_mem_reservation(addr) {
             panic!("memory is not reserved");
         }
 
@@ -1179,7 +1179,7 @@ impl Cpu {
         self.set_reg(inst.rd, 0);
     }
 
-    fn check_reservation_mem(&self, addr: u64) -> bool {
+    fn check_mem_reservation(&self, addr: u64) -> bool {
         if addr % 4 != 0 {
             panic!("invalid alinement");
         }
@@ -1193,7 +1193,7 @@ impl Cpu {
         true
     }
 
-    fn invalidate_reservation_mem(&mut self, addr: u64) {
+    fn invalidate_mem_reservation(&mut self, addr: u64) {
         if addr & 4 != 0 {
             panic!("invalid alinement");
         }
