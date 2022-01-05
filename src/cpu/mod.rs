@@ -794,6 +794,34 @@ impl Cpu {
             InstName::AmomaxW(_) => self.amomax_w(inst),
             InstName::AmominuW(_) => self.amominu_w(inst),
             InstName::AmomaxuW(_) => self.amomaxu_w(inst),
+            InstName::Lwu(_) => self.lwu(inst),
+            InstName::Ld(_) => self.ld(inst),
+            InstName::Sd(_) => self.sd(inst),
+            InstName::Addiw(_) => self.addiw(inst),
+            InstName::Slliw(_) => self.slliw(inst),
+            InstName::Srliw(_) => self.srliw(inst),
+            InstName::Sraiw(_) => self.sraiw(inst),
+            InstName::Addw(_) => self.addw(inst),
+            InstName::Subw(_) => self.subw(inst),
+            InstName::Sllw(_) => self.sllw(inst),
+            InstName::Srlw(_) => self.srlw(inst),
+            InstName::Sraw(_) => self.sraw(inst),
+            InstName::Mulw(_) => self.mulw(inst),
+            InstName::Divw(_) => self.divw(inst),
+            InstName::Divuw(_) => self.divuw(inst),
+            InstName::Remw(_) => self.remw(inst),
+            InstName::Remuw(_) => self.remuw(inst),
+            InstName::LrD(_) => self.lr_d(inst),
+            InstName::ScD(_) => self.sc_d(inst),
+            InstName::AmoswapD(_) => self.amoswap_d(inst),
+            InstName::AmoaddD(_) => self.amoadd_d(inst),
+            InstName::AmoxorD(_) => self.amoxor_d(inst),
+            InstName::AmoandD(_) => self.amoand_d(inst),
+            InstName::AmoorD(_) => self.amoor_d(inst),
+            InstName::AmominD(_) => self.amomin_d(inst),
+            InstName::AmomaxD(_) => self.amomax_d(inst),
+            InstName::AmominuD(_) => self.amominu_d(inst),
+            InstName::AmomaxuD(_) => self.amomaxu_d(inst),
         }
     }
 
@@ -1286,4 +1314,49 @@ impl Cpu {
             self.set_reg(inst.rd, data as i64 as u64);
         }
     }
+
+    fn lwu(&mut self, inst: &Instruction) {
+        let addr = self.get_reg(inst.rs1) as i64 + inst.imm as i64;
+        let v = self.bus.lw_dram(addr as u64);
+        self.set_reg(inst.rd, v as u64);
+    }
+
+    fn ld(&mut self, inst: &Instruction) {
+        let addr = self.get_reg(inst.rs1) as i64 + inst.imm as i64;
+        let v = self.bus.ld_dram(addr as u64);
+        self.set_reg(inst.rd, v);
+    }
+
+    fn sd(&mut self, inst: &Instruction) {
+        let v = self.get_reg(inst.rs2);
+        let addr = self.get_reg(inst.rs1) as i64 + inst.imm as i64;
+        self.bus.sd_dram(addr as u64, v);
+    }
+
+    fn addiw(&mut self, inst: &Instruction) {}
+
+    fn slliw(&mut self, inst: &Instruction) {}
+    fn srliw(&mut self, inst: &Instruction) {}
+    fn sraiw(&mut self, inst: &Instruction) {}
+    fn addw(&mut self, inst: &Instruction) {}
+    fn subw(&mut self, inst: &Instruction) {}
+    fn sllw(&mut self, inst: &Instruction) {}
+    fn srlw(&mut self, inst: &Instruction) {}
+    fn sraw(&mut self, inst: &Instruction) {}
+    fn mulw(&mut self, inst: &Instruction) {}
+    fn divw(&mut self, inst: &Instruction) {}
+    fn divuw(&mut self, inst: &Instruction) {}
+    fn remw(&mut self, inst: &Instruction) {}
+    fn remuw(&mut self, inst: &Instruction) {}
+    fn lr_d(&mut self, inst: &Instruction) {}
+    fn sc_d(&mut self, inst: &Instruction) {}
+    fn amoswap_d(&mut self, inst: &Instruction) {}
+    fn amoadd_d(&mut self, inst: &Instruction) {}
+    fn amoxor_d(&mut self, inst: &Instruction) {}
+    fn amoand_d(&mut self, inst: &Instruction) {}
+    fn amoor_d(&mut self, inst: &Instruction) {}
+    fn amomin_d(&mut self, inst: &Instruction) {}
+    fn amomax_d(&mut self, inst: &Instruction) {}
+    fn amominu_d(&mut self, inst: &Instruction) {}
+    fn amomaxu_d(&mut self, inst: &Instruction) {}
 }

@@ -35,6 +35,10 @@ impl Bus {
         self.dram.load_word(addr)
     }
 
+    pub fn ld_dram(&self, addr: u64) -> u64 {
+        self.dram.load_dword(addr)
+    }
+
     pub fn sb_dram(&mut self, addr: u64, data: u8) {
         self.dram.store_byte(addr, data);
     }
@@ -45,5 +49,9 @@ impl Bus {
 
     pub fn sw_dram(&mut self, addr: u64, data: u32) {
         self.dram.store_word(addr, data);
+    }
+
+    pub fn sd_dram(&mut self, addr: u64, data: u64) {
+        self.dram.store_dword(addr, data);
     }
 }
