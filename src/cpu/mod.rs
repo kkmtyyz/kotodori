@@ -794,7 +794,6 @@ impl Cpu {
             InstName::AmomaxW(_) => self.amomax_w(inst),
             InstName::AmominuW(_) => self.amominu_w(inst),
             InstName::AmomaxuW(_) => self.amomaxu_w(inst),
-            _ => (),
         }
     }
 
@@ -1042,20 +1041,24 @@ impl Cpu {
         self.set_reg(inst.rd, v);
     }
 
+    #[allow(unused_variables)]
     fn fence(&mut self, inst: &Instruction) {
         let pred = inst.imm >> 4 & 0b1111;
         let succ = inst.imm & 0b1111;
         // Implement when needed.
     }
 
+    #[allow(unused_variables)]
     fn fence_i(&mut self, inst: &Instruction) {
         // Implement when needed.
     }
 
+    #[allow(unused_variables)]
     fn ecall(&mut self, inst: &Instruction) {
         // Implement when needed.
     }
 
+    #[allow(unused_variables)]
     fn ebreak(&mut self, inst: &Instruction) {
         // Implement when needed.
     }
@@ -1204,21 +1207,83 @@ impl Cpu {
         self.mem_reserved_w[idx as usize] = rsv as u8;
     }
 
-    fn amoswap_w(&mut self, inst: &Instruction) {}
+    fn amoswap_w(&mut self, inst: &Instruction) {
+        let addr = self.get_reg(inst.rs1);
+        let data = self.bus.lw_dram(addr) as i64;
+        self.set_reg(inst.rd, data as u64);
+        self.bus.sw_dram(addr, self.get_reg(inst.rs2) as i32 as u32);
+        self.set_reg(inst.rs2, data as u64);
+    }
 
-    fn amoadd_w(&mut self, inst: &Instruction) {}
+    fn amoadd_w(&mut self, inst: &Instruction) {
+        let addr = self.get_reg(inst.rs1);
+        let mut data = self.bus.lw_dram(addr) as i32;
+        data += self.get_reg(inst.rs2) as i32;
+        self.set_reg(inst.rd, data as i64 as u64);
+    }
 
-    fn amoxor_w(&mut self, inst: &Instruction) {}
+    fn amoxor_w(&mut self, inst: &Instruction) {
+        let addr = self.get_reg(inst.rs1);
+        let mut data = self.bus.lw_dram(addr);
+        data ^= self.get_reg(inst.rs2) as u32;
+        self.set_reg(inst.rd, data as i64 as u64);
+    }
 
-    fn amoand_w(&mut self, inst: &Instruction) {}
+    fn amoand_w(&mut self, inst: &Instruction) {
+        let addr = self.get_reg(inst.rs1);
+        let mut data = self.bus.lw_dram(addr);
+        data &= self.get_reg(inst.rs2) as u32;
+        self.set_reg(inst.rd, data as i64 as u64);
+    }
 
-    fn amoor_w(&mut self, inst: &Instruction) {}
+    fn amoor_w(&mut self, inst: &Instruction) {
+        let addr = self.get_reg(inst.rs1);
+        let mut data = self.bus.lw_dram(addr);
+        data |= self.get_reg(inst.rs2) as u32;
+        self.set_reg(inst.rd, data as i64 as u64);
+    }
 
-    fn amomin_w(&mut self, inst: &Instruction) {}
+    fn amomin_w(&mut self, inst: &Instruction) {
+        let addr = self.get_reg(inst.rs1);
+        let data = self.bus.lw_dram(addr) as i32;
+        let rs2_v = self.get_reg(inst.rs2) as i32;
+        if data < rs2_v {
+            self.set_reg(inst.rd, data as i64 as u64);
+        } else {
+            self.set_reg(inst.rd, rs2_v as i64 as u64);
+        }
+    }
 
-    fn amomax_w(&mut self, inst: &Instruction) {}
+    fn amomax_w(&mut self, inst: &Instruction) {
+        let addr = self.get_reg(inst.rs1);
+        let data = self.bus.lw_dram(addr) as i32;
+        let rs2_v = self.get_reg(inst.rs2) as i32;
+        if data < rs2_v {
+            self.set_reg(inst.rd, rs2_v as i64 as u64);
+        } else {
+            self.set_reg(inst.rd, data as i64 as u64);
+        }
+    }
 
-    fn amominu_w(&mut self, inst: &Instruction) {}
+    fn amominu_w(&mut self, inst: &Instruction) {
+        let addr = self.get_reg(inst.rs1);
+        let data = self.bus.lw_dram(addr);
+        let rs2_v = self.get_reg(inst.rs2) as u32;
+        if data < rs2_v {
+            self.set_reg(inst.rd, data as i64 as u64);
+        } else {
+            self.set_reg(inst.rd, rs2_v as i64 as u64);
+        }
+    }
 
-    fn amomaxu_w(&mut self, inst: &Instruction) {}
+    fn amomaxu_w(&mut self, inst: &Instruction) {
+        let addr = self.get_reg(inst.rs1);
+        let data = self.bus.lw_dram(addr);
+        let rs2_v = self.get_reg(inst.rs2) as u32;
+        if data < rs2_v {
+            self.set_reg(inst.rd, rs2_v as i64 as u64);
+        } else {
+            self.set_reg(inst.rd, data as i64 as u64);
+        }
+    }
 }

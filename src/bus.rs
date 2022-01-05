@@ -1,6 +1,7 @@
 use crate::dram::Dram;
 
 #[derive(Debug)]
+#[allow(dead_code)]
 pub struct Bus {
     address: u32,
     data: u32,
