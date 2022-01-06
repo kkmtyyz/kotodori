@@ -1000,11 +1000,8 @@ impl Cpu {
         if shamt & 0b10_0000 == 1 {
             panic!("srli instruction overflow");
         }
-        let rs1 = self.get_reg(inst.rs1);
-        let sign = rs1 & 0x8000_0000;
-        let mut v = self.get_reg(inst.rs1) >> shamt;
-        v |= sign;
-        self.set_reg(inst.rd, v);
+        let v = (self.get_reg(inst.rs1) as i64) >> shamt;
+        self.set_reg(inst.rd, v as u64);
     }
 
     fn add(&mut self, inst: &Instruction) {
@@ -1333,11 +1330,39 @@ impl Cpu {
         self.bus.sd_dram(addr as u64, v);
     }
 
-    fn addiw(&mut self, inst: &Instruction) {}
+    fn addiw(&mut self, inst: &Instruction) {
+        let v = self.get_reg(inst.rs1) as i64 + inst.imm as i64;
+        self.set_reg(inst.rd, v as i32 as u64);
+    }
 
-    fn slliw(&mut self, inst: &Instruction) {}
-    fn srliw(&mut self, inst: &Instruction) {}
-    fn sraiw(&mut self, inst: &Instruction) {}
+    fn slliw(&mut self, inst: &Instruction) {
+        let shamt = (inst.imm & 0b11_1111) as u8;
+        if shamt & 0b10_0000 == 1 {
+            panic!("slliw instruction overflow");
+        }
+        let v = self.get_reg(inst.rs1) << shamt;
+        self.set_reg(inst.rd, v as i32 as u64);
+    }
+
+    fn srliw(&mut self, inst: &Instruction) {
+        let shamt = (inst.imm & 0b11_1111) as u8;
+        if shamt & 0b10_0000 == 1 {
+            panic!("srliw instruction overflow");
+        }
+        let v = (self.get_reg(inst.rs1) as u32) >> shamt;
+        self.set_reg(inst.rd, v as i32 as u64);
+    }
+
+    fn sraiw(&mut self, inst: &Instruction) {
+        let shamt = (inst.imm & 0b11_1111) as u8;
+        if shamt & 0b10_0000 == 1 {
+            panic!("sraiw instruction overflow");
+        }
+        let rs1 = self.get_reg(inst.rs1) as i32;
+        let v = rs1 >> shamt;
+        self.set_reg(inst.rd, v as i64 as u64);
+    }
+
     fn addw(&mut self, inst: &Instruction) {}
     fn subw(&mut self, inst: &Instruction) {}
     fn sllw(&mut self, inst: &Instruction) {}
