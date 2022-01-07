@@ -1049,11 +1049,8 @@ impl Cpu {
 
     fn sra(&mut self, inst: &Instruction) {
         let shamt = self.get_reg(inst.rs2) & 0b1_1111;
-        let rs1 = self.get_reg(inst.rs1);
-        let sign = rs1 & 0x8000_0000;
-        let mut v = self.get_reg(inst.rs1) >> shamt;
-        v |= sign;
-        self.set_reg(inst.rd, v);
+        let v = (self.get_reg(inst.rs1) as i64) >> shamt;
+        self.set_reg(inst.rd, v as u64);
     }
 
     fn or(&mut self, inst: &Instruction) {
@@ -1363,16 +1360,59 @@ impl Cpu {
         self.set_reg(inst.rd, v as i64 as u64);
     }
 
-    fn addw(&mut self, inst: &Instruction) {}
-    fn subw(&mut self, inst: &Instruction) {}
-    fn sllw(&mut self, inst: &Instruction) {}
-    fn srlw(&mut self, inst: &Instruction) {}
-    fn sraw(&mut self, inst: &Instruction) {}
-    fn mulw(&mut self, inst: &Instruction) {}
-    fn divw(&mut self, inst: &Instruction) {}
-    fn divuw(&mut self, inst: &Instruction) {}
-    fn remw(&mut self, inst: &Instruction) {}
-    fn remuw(&mut self, inst: &Instruction) {}
+    fn addw(&mut self, inst: &Instruction) {
+        let v = self.get_reg(inst.rs1) + self.get_reg(inst.rs2);
+        self.set_reg(inst.rd, v as i32 as i64 as u64);
+    }
+
+    fn subw(&mut self, inst: &Instruction) {
+        let v = self.get_reg(inst.rs1) - self.get_reg(inst.rs2);
+        self.set_reg(inst.rd, v as i32 as i64 as u64);
+    }
+
+    fn sllw(&mut self, inst: &Instruction) {
+        let shamt = self.get_reg(inst.rs2) & 0b1_1111;
+        let v = self.get_reg(inst.rs1) << shamt;
+        self.set_reg(inst.rd, v as u32 as i64 as u64);
+    }
+
+    fn srlw(&mut self, inst: &Instruction) {
+        let shamt = self.get_reg(inst.rs2) & 0b1_1111;
+        let v = (self.get_reg(inst.rs1) as u32) >> shamt;
+        self.set_reg(inst.rd, v as i64 as u64);
+    }
+
+    fn sraw(&mut self, inst: &Instruction) {
+        let shamt = self.get_reg(inst.rs2) & 0b1_1111;
+        let v = (self.get_reg(inst.rs1) as u32) >> shamt;
+        self.set_reg(inst.rd, v as i64 as u64);
+    }
+
+    fn mulw(&mut self, inst: &Instruction) {
+        let v = self.get_reg(inst.rs1) * self.get_reg(inst.rs2);
+        self.set_reg(inst.rd, v as u32 as i64 as u64);
+    }
+
+    fn divw(&mut self, inst: &Instruction) {
+        let v = (self.get_reg(inst.rs1) as u32 as i32) / (self.get_reg(inst.rs2) as u32 as i32);
+        self.set_reg(inst.rd, v as i64 as u64);
+    }
+
+    fn divuw(&mut self, inst: &Instruction) {
+        let v = (self.get_reg(inst.rs1) as u32) / (self.get_reg(inst.rs2) as u32);
+        self.set_reg(inst.rd, v as i64 as u64);
+    }
+
+    fn remw(&mut self, inst: &Instruction) {
+        let v = (self.get_reg(inst.rs1) as u32 as i32) % (self.get_reg(inst.rs2) as u32 as i32);
+        self.set_reg(inst.rd, v as i64 as u64);
+    }
+
+    fn remuw(&mut self, inst: &Instruction) {
+        let v = (self.get_reg(inst.rs1) as u32) % (self.get_reg(inst.rs2) as u32);
+        self.set_reg(inst.rd, v as i64 as u64);
+    }
+
     fn lr_d(&mut self, inst: &Instruction) {}
     fn sc_d(&mut self, inst: &Instruction) {}
     fn amoswap_d(&mut self, inst: &Instruction) {}
