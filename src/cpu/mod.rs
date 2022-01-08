@@ -535,6 +535,7 @@ impl Cpu {
 
     pub fn set_reg(&mut self, reg: u8, value: u64) {
         match reg {
+            0b0_0000 => (),
             0b0_0001 => self.ra = value,
             0b0_0010 => self.sp = value,
             0b0_0011 => self.gp = value,
@@ -825,68 +826,71 @@ impl Cpu {
         }
     }
 
+    /// x[rd] = sext(immediate[31:12] << 12)
     fn lui(&mut self, inst: &Instruction) {
-        let v = (inst.imm as i32) << 12;
+        let v = (inst.imm << 12) as i64;
         self.set_reg(inst.rd, v as u64);
     }
 
+    /// x[rd] = pc + sext(immediate[31:12] << 12)
     fn auipc(&mut self, inst: &Instruction) {
-        let v = ((inst.imm as i32) << 12) + self.pc as i32;
+        let v = self.pc as i64 + (inst.imm << 12) as i64;
         self.set_reg(inst.rd, v as u64);
     }
 
+    /// x[rd] = pc+4; pc += sext(offset)
     fn jal(&mut self, inst: &Instruction) {
-        if inst.rd == 0 {
-            self.ra = self.pc + 4; // ra == x1
-        } else {
-            self.set_reg(inst.rd, self.pc + 4);
-        }
-        let v = self.pc as i32 + inst.imm as i32;
+        self.set_reg(inst.rd, self.pc + 4);
+        let v = self.pc as i64 + inst.imm as i64;
         self.pc = v as u64;
     }
 
+    /// t =pc+4; pc=(x[rs1]+sext(offset))&∼1; x[rd]=t
     fn jalr(&mut self, inst: &Instruction) {
         let t = self.pc + 4;
-        let v = (self.get_reg(inst.rs1) as i32 + inst.imm as i32) as u32;
-        self.pc = v as u64 & 0xFFFF_FFFF_FFFF_FFFE;
 
-        if inst.rd == 0 {
-            self.ra = t;
-        } else {
-            self.set_reg(inst.rd, t);
-        }
+        let v = (self.get_reg(inst.rs1) as i64 + inst.imm as i64) as u64;
+        self.pc = v & !1;
+
+        self.set_reg(inst.rd, t);
     }
 
+    /// if (rs1 == rs2) pc += sext(offset)
     fn beq(&mut self, inst: &Instruction) {
         if self.get_reg(inst.rs1) == self.get_reg(inst.rs2) {
             self.pc = (self.pc as i64 + inst.imm as i64) as u64;
         }
     }
 
+    /// if (rs1 != rs2) pc += sext(offset)
     fn bne(&mut self, inst: &Instruction) {
         if self.get_reg(inst.rs1) != self.get_reg(inst.rs2) {
             self.pc = (self.pc as i64 + inst.imm as i64) as u64;
         }
     }
 
+    /// if (rs1 <s rs2) pc += sext(offset)
     fn blt(&mut self, inst: &Instruction) {
         if (self.get_reg(inst.rs1) as i64) < (self.get_reg(inst.rs2) as i64) {
             self.pc = (self.pc as i64 + inst.imm as i64) as u64;
         }
     }
 
+    /// if (rs1 >=s rs2) pc += sext(offset)
     fn bge(&mut self, inst: &Instruction) {
         if (self.get_reg(inst.rs1) as i64) >= (self.get_reg(inst.rs2) as i64) {
             self.pc = (self.pc as i64 + inst.imm as i64) as u64;
         }
     }
 
+    /// if (rs1 >u rs2) pc += sext(offset)
     fn bltu(&mut self, inst: &Instruction) {
         if self.get_reg(inst.rs1) < self.get_reg(inst.rs2) {
             self.pc = (self.pc as i64 + inst.imm as i64) as u64;
         }
     }
 
+    /// if (rs1 >=u rs2) pc += sext(offset)
     fn bgeu(&mut self, inst: &Instruction) {
         if self.get_reg(inst.rs1) >= self.get_reg(inst.rs2) {
             self.pc = (self.pc as i64 + inst.imm as i64) as u64;
@@ -1173,10 +1177,10 @@ impl Cpu {
         let addr = self.get_reg(inst.rs1);
         let data = self.bus.lw_dram(addr) as i64;
         self.set_reg(inst.rd, data as u64);
-        self.reserve_mem(addr);
+        self.reserve_mem(addr, false);
     }
 
-    fn reserve_mem(&mut self, addr: u64) {
+    fn reserve_mem(&mut self, addr: u64, d: bool) {
         if addr % 4 != 0 {
             panic!("invalid alignment");
         }
@@ -1184,7 +1188,11 @@ impl Cpu {
         let idx = addr / 32;
         match self.mem_reserved_w.get(idx as usize) {
             Some(rsv) => {
-                let rsv = (*rsv as usize) | (0x80 >> ((addr - idx * 32) / 4));
+                let mut bit = 0x80;
+                if d {
+                    bit = 0xC0;
+                }
+                let rsv = (*rsv as usize) | (bit >> ((addr - idx * 32) / 4));
                 self.mem_reserved_w[idx as usize] = rsv as u8;
             }
             None => panic!("invalid memory reserved word index"),
@@ -1193,10 +1201,10 @@ impl Cpu {
 
     fn sc_w(&mut self, inst: &Instruction) {
         let addr = self.get_reg(inst.rs1);
-        self.invalidate_mem_reservation(addr);
+        self.invalidate_mem_reservation(addr, false);
         let data = self.get_reg(inst.rs2) as u32;
 
-        if self.check_mem_reservation(addr) {
+        if self.check_mem_reservation(addr, false) {
             panic!("memory is not reserved");
         }
 
@@ -1204,28 +1212,36 @@ impl Cpu {
         self.set_reg(inst.rd, 0);
     }
 
-    fn check_mem_reservation(&self, addr: u64) -> bool {
+    fn check_mem_reservation(&self, addr: u64, d: bool) -> bool {
         if addr % 4 != 0 {
             panic!("invalid alinement");
         }
 
         let idx = addr / 32;
         let rsv = self.mem_reserved_w.get(idx as usize).unwrap();
-        let rsv = (*rsv as usize) & (0x80 >> ((addr - idx * 32) / 4));
+        let mut bit = 0x80;
+        if d {
+            bit = 0xC0;
+        }
+        let rsv = (*rsv as usize) & (bit >> ((addr - idx * 32) / 4));
         if rsv == 0 {
             return false;
         }
         true
     }
 
-    fn invalidate_mem_reservation(&mut self, addr: u64) {
+    fn invalidate_mem_reservation(&mut self, addr: u64, d: bool) {
         if addr & 4 != 0 {
             panic!("invalid alinement");
         }
 
         let idx = addr / 32;
         let rsv = self.mem_reserved_w.get(idx as usize).unwrap();
-        let rsv = (*rsv as usize) & !(0x80 >> ((addr - idx * 32) / 4));
+        let mut bit = 0x80;
+        if d {
+            bit = 0xC0;
+        }
+        let rsv = (*rsv as usize) & !(bit >> ((addr - idx * 32) / 4));
         self.mem_reserved_w[idx as usize] = rsv as u8;
     }
 
@@ -1413,15 +1429,107 @@ impl Cpu {
         self.set_reg(inst.rd, v as i64 as u64);
     }
 
-    fn lr_d(&mut self, inst: &Instruction) {}
-    fn sc_d(&mut self, inst: &Instruction) {}
-    fn amoswap_d(&mut self, inst: &Instruction) {}
-    fn amoadd_d(&mut self, inst: &Instruction) {}
-    fn amoxor_d(&mut self, inst: &Instruction) {}
-    fn amoand_d(&mut self, inst: &Instruction) {}
-    fn amoor_d(&mut self, inst: &Instruction) {}
-    fn amomin_d(&mut self, inst: &Instruction) {}
-    fn amomax_d(&mut self, inst: &Instruction) {}
-    fn amominu_d(&mut self, inst: &Instruction) {}
-    fn amomaxu_d(&mut self, inst: &Instruction) {}
+    fn lr_d(&mut self, inst: &Instruction) {
+        let addr = self.get_reg(inst.rs1);
+        let data = self.bus.ld_dram(addr);
+        self.set_reg(inst.rd, data);
+        self.reserve_mem(addr, true);
+    }
+
+    fn sc_d(&mut self, inst: &Instruction) {
+        let addr = self.get_reg(inst.rs1);
+        self.invalidate_mem_reservation(addr, true);
+        let data = self.get_reg(inst.rs2);
+
+        if self.check_mem_reservation(addr, true) {
+            panic!("memory is not reserved");
+        }
+
+        self.bus.sd_dram(addr, data);
+        self.set_reg(inst.rd, 0);
+    }
+
+    fn amoswap_d(&mut self, inst: &Instruction) {
+        let addr = self.get_reg(inst.rs1);
+        let data = self.bus.ld_dram(addr);
+        self.set_reg(inst.rd, data);
+        self.bus.sd_dram(addr, self.get_reg(inst.rs2));
+        self.set_reg(inst.rs2, data);
+    }
+
+    fn amoadd_d(&mut self, inst: &Instruction) {
+        let addr = self.get_reg(inst.rs1);
+        let mut data = self.bus.ld_dram(addr);
+        self.set_reg(inst.rd, data);
+        data += self.get_reg(inst.rs2);
+        self.bus.sd_dram(addr, data);
+    }
+
+    fn amoxor_d(&mut self, inst: &Instruction) {
+        let addr = self.get_reg(inst.rs1);
+        let mut data = self.bus.ld_dram(addr);
+        self.set_reg(inst.rd, data);
+        data ^= self.get_reg(inst.rs2);
+        self.bus.sd_dram(addr, data);
+    }
+
+    fn amoand_d(&mut self, inst: &Instruction) {
+        let addr = self.get_reg(inst.rs1);
+        let mut data = self.bus.ld_dram(addr);
+        self.set_reg(inst.rd, data);
+        data &= self.get_reg(inst.rs2);
+        self.bus.sd_dram(addr, data);
+    }
+
+    fn amoor_d(&mut self, inst: &Instruction) {
+        let addr = self.get_reg(inst.rs1);
+        let mut data = self.bus.ld_dram(addr);
+        self.set_reg(inst.rd, data);
+        data |= self.get_reg(inst.rs2);
+        self.bus.sd_dram(addr, data);
+    }
+
+    fn amomin_d(&mut self, inst: &Instruction) {
+        let addr = self.get_reg(inst.rs1);
+        let data = self.bus.ld_dram(addr);
+        self.set_reg(inst.rd, data);
+        if (data as i64) < (self.get_reg(inst.rs2) as i64) {
+            self.bus.sd_dram(addr, data);
+        } else {
+            self.bus.sd_dram(addr, self.get_reg(inst.rs2));
+        }
+    }
+
+    fn amomax_d(&mut self, inst: &Instruction) {
+        let addr = self.get_reg(inst.rs1);
+        let data = self.bus.ld_dram(addr);
+        self.set_reg(inst.rd, data);
+        if (data as i64) < (self.get_reg(inst.rs2) as i64) {
+            self.bus.sd_dram(addr, self.get_reg(inst.rs2));
+        } else {
+            self.bus.sd_dram(addr, data);
+        }
+    }
+
+    fn amominu_d(&mut self, inst: &Instruction) {
+        let addr = self.get_reg(inst.rs1);
+        let data = self.bus.ld_dram(addr);
+        self.set_reg(inst.rd, data);
+        if data < self.get_reg(inst.rs2) {
+            self.bus.sd_dram(addr, data);
+        } else {
+            self.bus.sd_dram(addr, self.get_reg(inst.rs2));
+        }
+    }
+
+    fn amomaxu_d(&mut self, inst: &Instruction) {
+        let addr = self.get_reg(inst.rs1);
+        let data = self.bus.ld_dram(addr);
+        self.set_reg(inst.rd, data);
+        if data < self.get_reg(inst.rs2) {
+            self.bus.sd_dram(addr, self.get_reg(inst.rs2));
+        } else {
+            self.bus.sd_dram(addr, data);
+        }
+    }
 }
