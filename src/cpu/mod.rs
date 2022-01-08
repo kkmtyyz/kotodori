@@ -897,59 +897,69 @@ impl Cpu {
         }
     }
 
+    /// x[rd] = sext(M[x[rs1] + sext(offset)][7:0])
     fn lb(&mut self, inst: &Instruction) {
         let addr = self.get_reg(inst.rs1) as i64 + inst.imm as i64;
         let v = self.bus.lb_dram(addr as u64) as i64;
         self.set_reg(inst.rd, v as u64);
     }
 
+    /// x[rd] = sext(M[x[rs1] + sext(offset)][15:0])
     fn lh(&mut self, inst: &Instruction) {
         let addr = self.get_reg(inst.rs1) as i64 + inst.imm as i64;
         let v = self.bus.lh_dram(addr as u64) as i64;
         self.set_reg(inst.rd, v as u64);
     }
 
+    /// x[rd] = sext(M[x[rs1] + sext(offset)][31:0])
     fn lw(&mut self, inst: &Instruction) {
         let addr = self.get_reg(inst.rs1) as i64 + inst.imm as i64;
         let v = self.bus.lw_dram(addr as u64) as i64;
         self.set_reg(inst.rd, v as u64);
     }
 
+    /// x[rd] = M[x[rs1] + sext(offset)][7:0]
     fn lbu(&mut self, inst: &Instruction) {
         let addr = self.get_reg(inst.rs1) as i64 + inst.imm as i64;
         let v = self.bus.lb_dram(addr as u64);
         self.set_reg(inst.rd, v as u64);
     }
 
+    /// x[rd] = M[x[rs1] + sext(offset)][15:0]
     fn lhu(&mut self, inst: &Instruction) {
         let addr = self.get_reg(inst.rs1) as i64 + inst.imm as i64;
         let v = self.bus.lh_dram(addr as u64);
         self.set_reg(inst.rd, v as u64);
     }
 
+    /// M[x[rs1] + sext(offset)] = x[rs2][7:0]
     fn sb(&mut self, inst: &Instruction) {
         let v = self.get_reg(inst.rs2) as u8;
         let addr = self.get_reg(inst.rs1) as i64 + inst.imm as i64;
         self.bus.sb_dram(addr as u64, v);
     }
 
+    /// M[x[rs1] + sext(offset)] = x[rs2][15:0]
     fn sh(&mut self, inst: &Instruction) {
         let v = self.get_reg(inst.rs2) as u16;
         let addr = self.get_reg(inst.rs1) as i64 + inst.imm as i64;
         self.bus.sh_dram(addr as u64, v);
     }
 
+    /// M[x[rs1] + sext(offset)] = x[rs2][31:0]
     fn sw(&mut self, inst: &Instruction) {
         let v = self.get_reg(inst.rs2) as u32;
         let addr = self.get_reg(inst.rs1) as i64 + inst.imm as i64;
         self.bus.sw_dram(addr as u64, v);
     }
 
+    /// x[rd] = x[rs1] + sext(immediate)
     fn addi(&mut self, inst: &Instruction) {
         let v = self.get_reg(inst.rs1) as i64 + inst.imm as i64;
         self.set_reg(inst.rd, v as u64);
     }
 
+    /// x[rd] = x[rs1] <s sext(immediate)
     fn slti(&mut self, inst: &Instruction) {
         if (self.get_reg(inst.rs1) as i64) < (inst.imm as i64) {
             self.set_reg(inst.rd, 1);
@@ -958,6 +968,7 @@ impl Cpu {
         }
     }
 
+    /// x[rd] = x[rs1] <u sext(immediate)
     fn sltiu(&mut self, inst: &Instruction) {
         if self.get_reg(inst.rs1) < inst.imm as u64 {
             self.set_reg(inst.rd, 1);
@@ -966,64 +977,65 @@ impl Cpu {
         }
     }
 
+    /// x[rd] = x[rs1] ^ sext(immediate)
     fn xori(&mut self, inst: &Instruction) {
         let v = (inst.imm as i64) ^ (self.get_reg(inst.rs1) as i64);
         self.set_reg(inst.rd, v as u64);
     }
 
+    /// x[rd] = x[rs1] | sext(immediate)
     fn ori(&mut self, inst: &Instruction) {
         let v = (inst.imm as i64) | (self.get_reg(inst.rs1) as i64);
         self.set_reg(inst.rd, v as u64);
     }
 
+    /// x[rd] = x[rs1] & sext(immediate)
     fn andi(&mut self, inst: &Instruction) {
         let v = (inst.imm as i64) & (self.get_reg(inst.rs1) as i64);
         self.set_reg(inst.rd, v as u64);
     }
 
+    /// x[rd] = x[rs1] << shamt
     fn slli(&mut self, inst: &Instruction) {
         let shamt = (inst.imm & 0b11_1111) as u8;
-        if shamt & 0b10_0000 == 1 {
-            panic!("slli instruction overflow");
-        }
         let v = self.get_reg(inst.rs1) << shamt;
         self.set_reg(inst.rd, v);
     }
 
+    /// x[rd] = x[rs1] >>u shamt
     fn srli(&mut self, inst: &Instruction) {
         let shamt = (inst.imm & 0b11_1111) as u8;
-        if shamt & 0b10_0000 == 1 {
-            panic!("srli instruction overflow");
-        }
         let v = self.get_reg(inst.rs1) >> shamt;
         self.set_reg(inst.rd, v);
     }
 
+    /// x[rd] = x[rs1] >>s shamt
     fn srai(&mut self, inst: &Instruction) {
         let shamt = (inst.imm & 0b11_1111) as u8;
-        if shamt & 0b10_0000 == 1 {
-            panic!("srli instruction overflow");
-        }
         let v = (self.get_reg(inst.rs1) as i64) >> shamt;
         self.set_reg(inst.rd, v as u64);
     }
 
+    /// x[rd] = x[rs1] + x[rs2]
     fn add(&mut self, inst: &Instruction) {
         let v = self.get_reg(inst.rs1) as i64 + self.get_reg(inst.rs2) as i64;
         self.set_reg(inst.rd, v as u64);
     }
 
+    /// x[rd] = x[rs1] - x[rs2]
     fn sub(&mut self, inst: &Instruction) {
         let v = self.get_reg(inst.rs1) as i64 - self.get_reg(inst.rs2) as i64;
         self.set_reg(inst.rd, v as u64);
     }
 
+    /// x[rd] = x[rs1] << x[rs2]
     fn sll(&mut self, inst: &Instruction) {
         let shamt = self.get_reg(inst.rs2) & 0b1_1111;
         let v = self.get_reg(inst.rs1) << shamt;
         self.set_reg(inst.rd, v);
     }
 
+    // x[rd] = x[rs1] <s x[rs2]
     fn slt(&mut self, inst: &Instruction) {
         if (self.get_reg(inst.rs1) as i64) < (self.get_reg(inst.rs2) as i64) {
             self.set_reg(inst.rd, 1);
@@ -1032,6 +1044,7 @@ impl Cpu {
         }
     }
 
+    /// x[rd] = x[rs1] <u x[rs2]
     fn sltu(&mut self, inst: &Instruction) {
         if self.get_reg(inst.rs1) < self.get_reg(inst.rs2) {
             self.set_reg(inst.rd, 1);
@@ -1040,33 +1053,39 @@ impl Cpu {
         }
     }
 
+    /// x[rd] = x[rs1] ^ x[rs2]
     fn xor(&mut self, inst: &Instruction) {
         let v = self.get_reg(inst.rs1) ^ self.get_reg(inst.rs2);
         self.set_reg(inst.rd, v);
     }
 
+    /// x[rd] = x[rs1] >>u x[rs2]
     fn srl(&mut self, inst: &Instruction) {
         let shamt = self.get_reg(inst.rs2) & 0b1_1111;
         let v = self.get_reg(inst.rs1) >> shamt;
         self.set_reg(inst.rd, v);
     }
 
+    /// x[rd] = x[rs1] >>s x[rs2]
     fn sra(&mut self, inst: &Instruction) {
         let shamt = self.get_reg(inst.rs2) & 0b1_1111;
         let v = (self.get_reg(inst.rs1) as i64) >> shamt;
         self.set_reg(inst.rd, v as u64);
     }
 
+    /// x[rd] = x[rs1] | x[rs2]
     fn or(&mut self, inst: &Instruction) {
         let v = self.get_reg(inst.rs1) | self.get_reg(inst.rs2);
         self.set_reg(inst.rd, v);
     }
 
+    /// x[rd] = x[rs1] & x[rs2]
     fn and(&mut self, inst: &Instruction) {
         let v = self.get_reg(inst.rs1) & self.get_reg(inst.rs2);
         self.set_reg(inst.rd, v);
     }
 
+    /// Fence(pred, succ)
     #[allow(unused_variables)]
     fn fence(&mut self, inst: &Instruction) {
         let pred = inst.imm >> 4 & 0b1111;
@@ -1074,21 +1093,25 @@ impl Cpu {
         // Implement when needed.
     }
 
+    /// Fence(Store, Fetch)
     #[allow(unused_variables)]
     fn fence_i(&mut self, inst: &Instruction) {
         // Implement when needed.
     }
 
+    /// RaiseException(EnvironmentCall)
     #[allow(unused_variables)]
     fn ecall(&mut self, inst: &Instruction) {
         // Implement when needed.
     }
 
+    /// RaiseException(Breakpoint)
     #[allow(unused_variables)]
     fn ebreak(&mut self, inst: &Instruction) {
         // Implement when needed.
     }
 
+    /// t = CSRs[csr]; CSRs[csr] = x[rs1]; x[rd] = t
     fn csrrw(&mut self, inst: &Instruction) {
         let csr = inst.imm as u16;
         let t = self.get_csr(csr);
@@ -1096,6 +1119,7 @@ impl Cpu {
         self.set_reg(inst.rd, t);
     }
 
+    /// t = CSRs[csr]; CSRs[csr] = t | x[rs1]; x[rd] = t
     fn csrrs(&mut self, inst: &Instruction) {
         let csr = inst.imm as u16;
         let t = self.get_csr(csr);
@@ -1103,6 +1127,7 @@ impl Cpu {
         self.set_reg(inst.rd, t);
     }
 
+    /// t = CSRs[csr]; CSRs[csr] = t &∼x[rs1]; x[rd] = t
     fn csrrc(&mut self, inst: &Instruction) {
         let csr = inst.imm as u16;
         let t = self.get_csr(csr);
@@ -1110,6 +1135,7 @@ impl Cpu {
         self.set_reg(inst.rd, t);
     }
 
+    /// x[rd] = CSRs[csr]; CSRs[csr] = zimm
     fn csrrwi(&mut self, inst: &Instruction) {
         let csr = inst.imm as u16;
         self.set_reg(inst.rd, self.get_csr(csr));
@@ -1117,6 +1143,7 @@ impl Cpu {
         self.set_csr(csr, zimm as u64);
     }
 
+    /// t = CSRs[csr]; CSRs[csr] = t | zimm; x[rd] = t
     fn csrrsi(&mut self, inst: &Instruction) {
         let csr = inst.imm as u16;
         let t = self.get_csr(csr);
@@ -1125,6 +1152,7 @@ impl Cpu {
         self.set_reg(inst.rd, t);
     }
 
+    /// t = CSRs[csr]; CSRs[csr] = t &∼zimm; x[rd] = t
     fn csrrci(&mut self, inst: &Instruction) {
         let csr = inst.imm as u16;
         let t = self.get_csr(csr);
