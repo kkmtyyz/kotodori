@@ -1,17 +1,17 @@
 
-main.o:     file format elf32-littleriscv
+main.o:     file format elf64-littleriscv
 
 
 Disassembly of section .text:
 
-00000000 <main>:
+0000000000000000 <main>:
    0:	fe010113          	addi	sp,sp,-32
-   4:	00812e23          	sw	s0,28(sp)
+   4:	00813c23          	sd	s0,24(sp)
    8:	02010413          	addi	s0,sp,32
    c:	06400793          	li	a5,100
   10:	fef42623          	sw	a5,-20(s0)
   14:	00000793          	li	a5,0
   18:	00078513          	mv	a0,a5
-  1c:	01c12403          	lw	s0,28(sp)
+  1c:	01813403          	ld	s0,24(sp)
   20:	02010113          	addi	sp,sp,32
   24:	00008067          	ret

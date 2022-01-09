@@ -1,4 +1,4 @@
-// $ cargo run --example load_file -- -f examples/test.dump
+// $ cargo run --release --example load_file -- -f examples/test.dump
 
 use kotodori::cmd::Command;
 use kotodori::emulator::Emulator;

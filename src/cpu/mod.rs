@@ -703,7 +703,7 @@ impl Cpu {
     }
 
     pub fn run(&mut self) {
-        for _ in 0..2 {
+        for _ in 0..10 {
             // in dev
             //loop { // in prod
             let data = self.fetch();
@@ -1161,46 +1161,55 @@ impl Cpu {
         self.set_reg(inst.rd, t);
     }
 
+    /// x[rd] = x[rs1] × x[rs2]
     fn mul(&mut self, inst: &Instruction) {
-        let v = self.get_reg(inst.rs1) * self.get_reg(inst.rs2);
-        self.set_reg(inst.rd, v);
+        let v = self.get_reg(inst.rs1) as i64 * self.get_reg(inst.rs2) as i64;
+        self.set_reg(inst.rd, v as u64);
     }
 
+    /// x[rd] = (x[rs1] s×s x[rs2]) >>s XLEN
     fn mulh(&mut self, inst: &Instruction) {
         let v = (self.get_reg(inst.rs1) as i64) * (self.get_reg(inst.rs2) as i64);
         self.set_reg(inst.rd, (v >> 32) as u64);
     }
 
+    /// x[rd] = (x[rs1] s × x[rs2]) >>s XLEN
     fn mulhsu(&mut self, inst: &Instruction) {
         let v = ((self.get_reg(inst.rs1) as i64) as u64) * self.get_reg(inst.rs2);
         self.set_reg(inst.rd, (v >> 32) as u64);
     }
 
+    /// x[rd] = (x[rs1] u × x[rs2]) >>u XLEN
     fn mulhu(&mut self, inst: &Instruction) {
         let v = self.get_reg(inst.rs1) * self.get_reg(inst.rs2);
         self.set_reg(inst.rd, (v >> 32) as u64);
     }
 
+    /// x[rd] = x[rs1] /s x[rs2]
     fn div(&mut self, inst: &Instruction) {
         let v = (self.get_reg(inst.rs1) as i64) / (self.get_reg(inst.rs2) as i64);
         self.set_reg(inst.rd, v as u64);
     }
 
+    /// x[rd] = x[rs1] /u x[rs2]
     fn divu(&mut self, inst: &Instruction) {
         let v = self.get_reg(inst.rs1) / self.get_reg(inst.rs2);
         self.set_reg(inst.rd, v);
     }
 
+    /// x[rd] = x[rs1] %s x[rs2]
     fn rem(&mut self, inst: &Instruction) {
         let v = (self.get_reg(inst.rs1) as i64) % (self.get_reg(inst.rs2) as i64);
         self.set_reg(inst.rd, v as u64);
     }
 
+    /// x[rd] = x[rs1] %u x[rs2]
     fn remu(&mut self, inst: &Instruction) {
         let v = self.get_reg(inst.rs1) % self.get_reg(inst.rs2);
         self.set_reg(inst.rd, v);
     }
 
+    /// x[rd] = LoadReserved32(M[x[rs1]])
     fn lr_w(&mut self, inst: &Instruction) {
         let addr = self.get_reg(inst.rs1);
         let data = self.bus.lw_dram(addr) as i64;
@@ -1273,6 +1282,7 @@ impl Cpu {
         self.mem_reserved_w[idx as usize] = rsv as u8;
     }
 
+    /// x[rd] = AMO32(M[x[rs1]] SWAP x[rs2])
     fn amoswap_w(&mut self, inst: &Instruction) {
         let addr = self.get_reg(inst.rs1);
         let data = self.bus.lw_dram(addr) as i64;
@@ -1281,75 +1291,93 @@ impl Cpu {
         self.set_reg(inst.rs2, data as u64);
     }
 
+    /// x[rd] = AMO32(M[x[rs1]] + x[rs2])
     fn amoadd_w(&mut self, inst: &Instruction) {
         let addr = self.get_reg(inst.rs1);
         let mut data = self.bus.lw_dram(addr) as i32;
-        data += self.get_reg(inst.rs2) as i32;
         self.set_reg(inst.rd, data as i64 as u64);
+        data += self.get_reg(inst.rs2) as i32;
+        self.bus.sw_dram(addr, data as u32);
     }
 
+    /// x[rd] = AMO32(M[x[rs1]] ^ x[rs2])
     fn amoxor_w(&mut self, inst: &Instruction) {
         let addr = self.get_reg(inst.rs1);
         let mut data = self.bus.lw_dram(addr);
-        data ^= self.get_reg(inst.rs2) as u32;
         self.set_reg(inst.rd, data as i64 as u64);
+        data ^= self.get_reg(inst.rs2) as u32;
+        self.bus.sw_dram(addr, data);
     }
 
+    /// x[rd] = AMO32(M[x[rs1]] & x[rs2])
     fn amoand_w(&mut self, inst: &Instruction) {
         let addr = self.get_reg(inst.rs1);
         let mut data = self.bus.lw_dram(addr);
-        data &= self.get_reg(inst.rs2) as u32;
         self.set_reg(inst.rd, data as i64 as u64);
+        data &= self.get_reg(inst.rs2) as u32;
+        self.bus.sw_dram(addr, data);
     }
 
+    /// x[rd] = AMO32(M[x[rs1]] | x[rs2])
     fn amoor_w(&mut self, inst: &Instruction) {
         let addr = self.get_reg(inst.rs1);
         let mut data = self.bus.lw_dram(addr);
-        data |= self.get_reg(inst.rs2) as u32;
         self.set_reg(inst.rd, data as i64 as u64);
+        data |= self.get_reg(inst.rs2) as u32;
+        self.bus.sw_dram(addr, data);
     }
 
+    /// x[rd] = AMO32(M[x[rs1]] MIN x[rs2])
     fn amomin_w(&mut self, inst: &Instruction) {
         let addr = self.get_reg(inst.rs1);
         let data = self.bus.lw_dram(addr) as i32;
+        self.set_reg(inst.rd, data as i64 as u64);
+
         let rs2_v = self.get_reg(inst.rs2) as i32;
         if data < rs2_v {
-            self.set_reg(inst.rd, data as i64 as u64);
+            self.bus.sw_dram(addr, data as u32);
         } else {
-            self.set_reg(inst.rd, rs2_v as i64 as u64);
+            self.bus.sw_dram(addr, self.get_reg(inst.rs2) as u32);
         }
     }
 
+    /// x[rd] = AMO32(M[x[rs1]] MAX x[rs2])
     fn amomax_w(&mut self, inst: &Instruction) {
         let addr = self.get_reg(inst.rs1);
         let data = self.bus.lw_dram(addr) as i32;
+        self.set_reg(inst.rd, data as i64 as u64);
+
         let rs2_v = self.get_reg(inst.rs2) as i32;
         if data < rs2_v {
-            self.set_reg(inst.rd, rs2_v as i64 as u64);
+            self.bus.sw_dram(addr, self.get_reg(inst.rs2) as u32);
         } else {
-            self.set_reg(inst.rd, data as i64 as u64);
+            self.bus.sw_dram(addr, data as u32);
         }
     }
 
+    /// x[rd] = AMO32(M[x[rs1]] MINU x[rs2])
     fn amominu_w(&mut self, inst: &Instruction) {
         let addr = self.get_reg(inst.rs1);
         let data = self.bus.lw_dram(addr);
+        self.set_reg(inst.rd, data as i64 as u64);
         let rs2_v = self.get_reg(inst.rs2) as u32;
         if data < rs2_v {
-            self.set_reg(inst.rd, data as i64 as u64);
+            self.bus.sw_dram(addr, data as u32);
         } else {
-            self.set_reg(inst.rd, rs2_v as i64 as u64);
+            self.bus.sw_dram(addr, self.get_reg(inst.rs2) as u32);
         }
     }
 
+    /// x[rd] = AMO32(M[x[rs1]] MAXU x[rs2])
     fn amomaxu_w(&mut self, inst: &Instruction) {
         let addr = self.get_reg(inst.rs1);
         let data = self.bus.lw_dram(addr);
+        self.set_reg(inst.rd, data as i64 as u64);
         let rs2_v = self.get_reg(inst.rs2) as u32;
         if data < rs2_v {
-            self.set_reg(inst.rd, rs2_v as i64 as u64);
+            self.bus.sw_dram(addr, self.get_reg(inst.rs2) as u32);
         } else {
-            self.set_reg(inst.rd, data as i64 as u64);
+            self.bus.sw_dram(addr, data);
         }
     }
 
