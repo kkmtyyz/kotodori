@@ -5,6 +5,7 @@ use std::env;
 pub struct Command {
     pub in_f: Option<String>,
     pub mem_size: Option<usize>,
+    pub elf: Option<String>,
 }
 
 impl Command {
@@ -12,6 +13,7 @@ impl Command {
         Command {
             in_f: None,
             mem_size: Some(conf::MEMORY_SIZE),
+            elf: None,
         }
     }
 
@@ -33,6 +35,7 @@ impl Command {
             match &*arg.unwrap() {
                 "-f" => cmd.in_f = Command::get_arg_string(&mut args),
                 "-m" => cmd.mem_size = Command::get_arg_usize(&mut args),
+                "--elf" => cmd.elf = Command::get_arg_string(&mut args),
                 _ => (),
             }
         }
