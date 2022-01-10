@@ -1018,13 +1018,13 @@ impl Cpu {
 
     /// x[rd] = x[rs1] + x[rs2]
     fn add(&mut self, inst: &Instruction) {
-        let v = self.get_reg(inst.rs1) as i64 + self.get_reg(inst.rs2) as i64;
+        let v = self.get_reg(inst.rs1) + self.get_reg(inst.rs2);
         self.set_reg(inst.rd, v as u64);
     }
 
     /// x[rd] = x[rs1] - x[rs2]
     fn sub(&mut self, inst: &Instruction) {
-        let v = self.get_reg(inst.rs1) as i64 - self.get_reg(inst.rs2) as i64;
+        let v = self.get_reg(inst.rs1) - self.get_reg(inst.rs2);
         self.set_reg(inst.rd, v as u64);
     }
 
@@ -1163,7 +1163,7 @@ impl Cpu {
 
     /// x[rd] = x[rs1] × x[rs2]
     fn mul(&mut self, inst: &Instruction) {
-        let v = self.get_reg(inst.rs1) as i64 * self.get_reg(inst.rs2) as i64;
+        let v = self.get_reg(inst.rs1) * self.get_reg(inst.rs2);
         self.set_reg(inst.rd, v as u64);
     }
 
@@ -1381,110 +1381,128 @@ impl Cpu {
         }
     }
 
+    /// x[rd] = M[x[rs1] + sext(offset)][31:0]
     fn lwu(&mut self, inst: &Instruction) {
         let addr = self.get_reg(inst.rs1) as i64 + inst.imm as i64;
         let v = self.bus.lw_dram(addr as u64);
         self.set_reg(inst.rd, v as u64);
     }
 
+    /// x[rd] = M[x[rs1] + sext(offset)][63:0]
     fn ld(&mut self, inst: &Instruction) {
         let addr = self.get_reg(inst.rs1) as i64 + inst.imm as i64;
         let v = self.bus.ld_dram(addr as u64);
         self.set_reg(inst.rd, v);
     }
 
+    /// M[x[rs1] + sext(offset)] = x[rs2][63:0]
     fn sd(&mut self, inst: &Instruction) {
         let v = self.get_reg(inst.rs2);
         let addr = self.get_reg(inst.rs1) as i64 + inst.imm as i64;
         self.bus.sd_dram(addr as u64, v);
     }
 
+    /// x[rd] = sext((x[rs1] + sext(immediate))[31:0])
     fn addiw(&mut self, inst: &Instruction) {
         let v = self.get_reg(inst.rs1) as i64 + inst.imm as i64;
         self.set_reg(inst.rd, v as i32 as u64);
     }
 
+    /// x[rd] = sext((x[rs1] << shamt)[31:0])
     fn slliw(&mut self, inst: &Instruction) {
         let shamt = (inst.imm & 0b11_1111) as u8;
         if shamt & 0b10_0000 == 1 {
-            panic!("slliw instruction overflow");
+            panic!("reserved encoding of slliw");
         }
         let v = self.get_reg(inst.rs1) << shamt;
         self.set_reg(inst.rd, v as i32 as u64);
     }
 
+    /// x[rd] = sext(x[rs1][31:0] >>u shamt)
     fn srliw(&mut self, inst: &Instruction) {
         let shamt = (inst.imm & 0b11_1111) as u8;
         if shamt & 0b10_0000 == 1 {
-            panic!("srliw instruction overflow");
+            panic!("reserved encoding of srliw");
         }
         let v = (self.get_reg(inst.rs1) as u32) >> shamt;
         self.set_reg(inst.rd, v as i32 as u64);
     }
 
+    /// x[rd] = sext(x[rs1][31:0] >>s shamt)
     fn sraiw(&mut self, inst: &Instruction) {
         let shamt = (inst.imm & 0b11_1111) as u8;
         if shamt & 0b10_0000 == 1 {
-            panic!("sraiw instruction overflow");
+            panic!("reserved encoding of sraiw");
         }
         let rs1 = self.get_reg(inst.rs1) as i32;
         let v = rs1 >> shamt;
         self.set_reg(inst.rd, v as i64 as u64);
     }
 
+    /// x[rd] = sext((x[rs1] + x[rs2])[31:0])
     fn addw(&mut self, inst: &Instruction) {
         let v = self.get_reg(inst.rs1) + self.get_reg(inst.rs2);
         self.set_reg(inst.rd, v as i32 as i64 as u64);
     }
 
+    /// x[rd] = sext((x[rs1] - x[rs2])[31:0])
     fn subw(&mut self, inst: &Instruction) {
         let v = self.get_reg(inst.rs1) - self.get_reg(inst.rs2);
         self.set_reg(inst.rd, v as i32 as i64 as u64);
     }
 
+    /// x[rd] = sext((x[rs1] << x[rs2][4:0])[31:0])
     fn sllw(&mut self, inst: &Instruction) {
         let shamt = self.get_reg(inst.rs2) & 0b1_1111;
         let v = self.get_reg(inst.rs1) << shamt;
         self.set_reg(inst.rd, v as u32 as i64 as u64);
     }
 
+    /// x[rd] = sext(x[rs1][31:0] >>u x[rs2][4:0])
     fn srlw(&mut self, inst: &Instruction) {
         let shamt = self.get_reg(inst.rs2) & 0b1_1111;
         let v = (self.get_reg(inst.rs1) as u32) >> shamt;
         self.set_reg(inst.rd, v as i64 as u64);
     }
 
+    /// x[rd] = sext(x[rs1][31:0] >>s x[rs2][4:0])
     fn sraw(&mut self, inst: &Instruction) {
         let shamt = self.get_reg(inst.rs2) & 0b1_1111;
-        let v = (self.get_reg(inst.rs1) as u32) >> shamt;
+        let v = (self.get_reg(inst.rs1) as u32 as i32) >> shamt;
         self.set_reg(inst.rd, v as i64 as u64);
     }
 
+    /// x[rd] = sext((x[rs1] × x[rs2])[31:0])
     fn mulw(&mut self, inst: &Instruction) {
         let v = self.get_reg(inst.rs1) * self.get_reg(inst.rs2);
         self.set_reg(inst.rd, v as u32 as i64 as u64);
     }
 
+    /// x[rd] = sext(x[rs1][31:0] /s x[rs2][31:0]
     fn divw(&mut self, inst: &Instruction) {
         let v = (self.get_reg(inst.rs1) as u32 as i32) / (self.get_reg(inst.rs2) as u32 as i32);
         self.set_reg(inst.rd, v as i64 as u64);
     }
 
+    /// x[rd] = sext(x[rs1][31:0] /u x[rs2][31:0])
     fn divuw(&mut self, inst: &Instruction) {
         let v = (self.get_reg(inst.rs1) as u32) / (self.get_reg(inst.rs2) as u32);
         self.set_reg(inst.rd, v as i64 as u64);
     }
 
+    /// x[rd] = sext(x[rs1][31:0] %s x[rs2][31:0])
     fn remw(&mut self, inst: &Instruction) {
         let v = (self.get_reg(inst.rs1) as u32 as i32) % (self.get_reg(inst.rs2) as u32 as i32);
         self.set_reg(inst.rd, v as i64 as u64);
     }
 
+    /// x[rd] = sext(x[rs1][31:0] %u x[rs2][31:0])
     fn remuw(&mut self, inst: &Instruction) {
         let v = (self.get_reg(inst.rs1) as u32) % (self.get_reg(inst.rs2) as u32);
         self.set_reg(inst.rd, v as i64 as u64);
     }
 
+    /// x[rd] = LoadReserved64(M[x[rs1]])
     fn lr_d(&mut self, inst: &Instruction) {
         let addr = self.get_reg(inst.rs1);
         let data = self.bus.ld_dram(addr);
@@ -1492,6 +1510,7 @@ impl Cpu {
         self.reserve_mem(addr, true);
     }
 
+    /// x[rd] = StoreConditional64(M[x[rs1]], x[rs2])
     fn sc_d(&mut self, inst: &Instruction) {
         let addr = self.get_reg(inst.rs1);
         self.invalidate_mem_reservation(addr, true);
@@ -1505,6 +1524,7 @@ impl Cpu {
         self.set_reg(inst.rd, 0);
     }
 
+    /// x[rd] = AMO64(M[x[rs1]] SWAP x[rs2])
     fn amoswap_d(&mut self, inst: &Instruction) {
         let addr = self.get_reg(inst.rs1);
         let data = self.bus.ld_dram(addr);
@@ -1513,6 +1533,7 @@ impl Cpu {
         self.set_reg(inst.rs2, data);
     }
 
+    /// x[rd] = AMO64(M[x[rs1]] + x[rs2])
     fn amoadd_d(&mut self, inst: &Instruction) {
         let addr = self.get_reg(inst.rs1);
         let mut data = self.bus.ld_dram(addr);
@@ -1521,6 +1542,7 @@ impl Cpu {
         self.bus.sd_dram(addr, data);
     }
 
+    /// x[rd] = AMO64(M[x[rs1]] ^ x[rs2])
     fn amoxor_d(&mut self, inst: &Instruction) {
         let addr = self.get_reg(inst.rs1);
         let mut data = self.bus.ld_dram(addr);
@@ -1529,6 +1551,7 @@ impl Cpu {
         self.bus.sd_dram(addr, data);
     }
 
+    /// x[rd] = AMO64(M[x[rs1]] & x[rs2])
     fn amoand_d(&mut self, inst: &Instruction) {
         let addr = self.get_reg(inst.rs1);
         let mut data = self.bus.ld_dram(addr);
@@ -1537,6 +1560,7 @@ impl Cpu {
         self.bus.sd_dram(addr, data);
     }
 
+    /// x[rd] = AMO64(M[x[rs1]] | x[rs2])
     fn amoor_d(&mut self, inst: &Instruction) {
         let addr = self.get_reg(inst.rs1);
         let mut data = self.bus.ld_dram(addr);
@@ -1545,6 +1569,7 @@ impl Cpu {
         self.bus.sd_dram(addr, data);
     }
 
+    /// x[rd] = AMO64(M[x[rs1]] MIN x[rs2])
     fn amomin_d(&mut self, inst: &Instruction) {
         let addr = self.get_reg(inst.rs1);
         let data = self.bus.ld_dram(addr);
@@ -1556,6 +1581,7 @@ impl Cpu {
         }
     }
 
+    /// x[rd] = AMO64(M[x[rs1]] MAX x[rs2])
     fn amomax_d(&mut self, inst: &Instruction) {
         let addr = self.get_reg(inst.rs1);
         let data = self.bus.ld_dram(addr);
@@ -1567,6 +1593,7 @@ impl Cpu {
         }
     }
 
+    /// x[rd] = AMO64(M[x[rs1]] MINU x[rs2])
     fn amominu_d(&mut self, inst: &Instruction) {
         let addr = self.get_reg(inst.rs1);
         let data = self.bus.ld_dram(addr);
@@ -1578,6 +1605,7 @@ impl Cpu {
         }
     }
 
+    /// x[rd] = AMO64(M[x[rs1]] MAXU x[rs2])
     fn amomaxu_d(&mut self, inst: &Instruction) {
         let addr = self.get_reg(inst.rs1);
         let data = self.bus.ld_dram(addr);
