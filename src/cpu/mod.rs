@@ -697,9 +697,9 @@ impl Cpu {
         }
     }
 
-    pub fn init(&mut self) {
+    pub fn init(&mut self, entry_point: usize) {
         self.sp = conf::STACK_BOTTOM;
-        self.pc = conf::TEXT_START;
+        self.pc = entry_point as u64;
     }
 
     pub fn run(&mut self) {
@@ -712,7 +712,11 @@ impl Cpu {
             inst.print();
 
             self.exec_instruction(&inst);
-            self.pc += 4;
+            match inst.name {
+                InstName::Jal(_) => (),
+                _ => self.pc += 4,
+            }
+            // println!("pc: 0x{:016X}", self.pc);
         }
     }
 

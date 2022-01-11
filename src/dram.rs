@@ -1,3 +1,5 @@
+use crate::conf::MEMORY_OFF;
+
 #[derive(Debug)]
 pub struct Dram {
     memory: Vec<u8>,
@@ -7,6 +9,22 @@ impl Dram {
     pub fn new(mem_size: usize) -> Dram {
         Dram {
             memory: vec![0; mem_size],
+        }
+    }
+
+    #[inline(always)]
+    fn set_mem(&mut self, idx: usize, data: u8) {
+        if self.memory.len() < idx - MEMORY_OFF {
+            panic!("access to invalid address");
+        }
+        self.memory[idx - MEMORY_OFF] = data;
+    }
+
+    #[inline(always)]
+    fn get_mem(&self, idx: usize) -> u8 {
+        match self.memory.get(idx - MEMORY_OFF) {
+            Some(data) => *data,
+            None => panic!("access to invalid address: 0x{:016X}", idx),
         }
     }
 
@@ -27,7 +45,7 @@ impl Dram {
                 print!("{:04X} | ", i);
             }
 
-            print!("{:02X}", self.memory[i]);
+            print!("{:02X}", self.get_mem(i));
 
             if (i + 1) % 2 == 0 {
                 print!(" ");
@@ -52,30 +70,38 @@ impl Dram {
 
         // to little endian
         for i in (0..data.len()).step_by(4) {
-            self.memory[i] = data[i + 3];
-            self.memory[i + 1] = data[i + 2];
-            self.memory[i + 2] = data[i + 1];
-            self.memory[i + 3] = data[i];
+            self.set_mem(i + MEMORY_OFF, data[i + 3]);
+            self.set_mem(i + 1 + MEMORY_OFF, data[i + 2]);
+            self.set_mem(i + 2 + MEMORY_OFF, data[i + 1]);
+            self.set_mem(i + 3 + MEMORY_OFF, data[i]);
+        }
+    }
+
+    pub fn load_seg(
+        &mut self,
+        data: &Vec<u8>,
+        seg_off: usize,
+        seg_phys_addr: usize,
+        seg_size: usize,
+    ) {
+        if self.memory.len() < seg_size {
+            panic!("segment is big");
+        }
+
+        for i in 0..seg_size {
+            self.set_mem(seg_phys_addr + i, data[seg_off + i]);
         }
     }
 
     pub fn load_byte(&self, addr: u64) -> u8 {
-        match self.memory.get(addr as usize) {
-            Some(data) => *data,
-            None => panic!("access to invalid address"),
-        }
+        self.get_mem(addr as usize)
     }
 
     pub fn load_hword(&self, begin: u64) -> u16 {
         let mut res: u16 = 0;
         for i in begin..begin + 2 {
-            match self.memory.get(i as usize) {
-                Some(data) => {
-                    res <<= 8;
-                    res |= *data as u16;
-                }
-                None => panic!("access to invalid address"),
-            }
+            res <<= 8;
+            res |= self.get_mem(i as usize) as u16;
         }
         res
     }
@@ -83,13 +109,8 @@ impl Dram {
     pub fn load_word(&self, addr: u64) -> u32 {
         let mut res: u32 = 0;
         for i in addr..addr + 4 {
-            match self.memory.get(i as usize) {
-                Some(data) => {
-                    res <<= 8;
-                    res |= *data as u32;
-                }
-                None => panic!("access to invalid address"),
-            }
+            res <<= 8;
+            res |= self.get_mem(i as usize) as u32;
         }
         res
     }
@@ -97,42 +118,35 @@ impl Dram {
     pub fn load_dword(&self, addr: u64) -> u64 {
         let mut res: u64 = 0;
         for i in addr..addr + 8 {
-            match self.memory.get(i as usize) {
-                Some(data) => {
-                    res <<= 8;
-                    res |= *data as u64;
-                }
-                None => panic!("access to invalid address"),
-            }
+            res <<= 8;
+            res |= self.get_mem(i as usize) as u64;
         }
         res
     }
 
     pub fn store_byte(&mut self, addr: u64, data: u8) {
-        self.memory[addr as usize] = data;
+        self.set_mem(addr as usize, data);
     }
 
     pub fn store_hword(&mut self, addr: u64, data: u16) {
-        self.memory[addr as usize] = (data & 0xF) as u8;
+        self.set_mem(addr as usize, (data & 0xF) as u8);
         let addr = addr + 1;
-        self.memory[addr as usize] = (data >> 8) as u8;
+        self.set_mem(addr as usize, (data >> 8) as u8);
     }
 
     pub fn store_word(&mut self, mut addr: u64, data: u32) {
-        self.memory[addr as usize] = (data & 0xF) as u8;
-
+        self.set_mem(addr as usize, (data & 0xF) as u8);
         for _ in 0..3 {
             addr = addr + 1;
-            self.memory[addr as usize] = ((data >> 8) & 0xF) as u8;
+            self.set_mem(addr as usize, ((data >> 8) & 0xF) as u8);
         }
     }
 
     pub fn store_dword(&mut self, mut addr: u64, data: u64) {
-        self.memory[addr as usize] = (data & 0xF) as u8;
-
+        self.set_mem(addr as usize, (data & 0xF) as u8);
         for _ in 0..7 {
             addr = addr + 1;
-            self.memory[addr as usize] = ((data >> 8) & 0xF) as u8;
+            self.set_mem(addr as usize, ((data >> 8) & 0xF) as u8);
         }
     }
 }

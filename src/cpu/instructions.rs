@@ -367,7 +367,8 @@ fn to_ri(inst: u32, fmt: &InstFmt) -> (u8, u8, u8, u32) {
             imm <<= 1;
             imm |= inst >> 20 & 0b1;
             imm <<= 10;
-            imm |= inst >> 22 & 0b11_1111_1111;
+            imm |= inst >> 21 & 0b11_1111_1111;
+            imm <<= 1;
         }
     }
     (rs1, rs2, rd, imm)

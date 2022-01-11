@@ -4,6 +4,7 @@ use std::path::Path;
 
 use crate::bus::Bus;
 use crate::cmd::Command;
+use crate::conf::MEMORY_OFF;
 use crate::cpu::Cpu;
 use crate::dram::Dram;
 
@@ -15,7 +16,7 @@ pub struct Emulator {
 impl Emulator {
     pub fn new(cmd: Command) -> Emulator {
         let mut dram = Dram::new(cmd.mem_size.unwrap());
-        let mut entry_point = 0;
+        let mut entry_point = MEMORY_OFF;
         if let Some(in_f) = cmd.in_f.clone() {
             Emulator::load_file_to_dram(&mut dram, in_f);
         }
@@ -40,7 +41,7 @@ impl Emulator {
     }
 
     pub fn exec(&mut self) {
-        self.cpu.init();
+        self.cpu.init(self.entry_point);
         self.cpu.run();
     }
 
@@ -69,7 +70,7 @@ impl Emulator {
                 if is_not_elf(&data) {
                     panic!("invalid elf format");
                 }
-                let entry_point = get_entry_point(&data);
+                let entry_point = get_ltl(&data, 24, 8);
                 load_program(dram, data);
 
                 entry_point
@@ -79,6 +80,26 @@ impl Emulator {
     }
 }
 
+/// Returns the `size` byte from the` idx` byte of the `data`
+/// as little endian.
+/// If the `size` is 0, 0 is returned.
+///
+/// # Examples
+/// ```rust
+/// let data: Vec<u8> = vec![0x12, 0x34, 0x56, 0x78];
+/// assert_eq!(get_ltl(&data, 1, 2), 0x5634);
+/// assert_eq!(get_ltl(&data, 0, 1), 0x12);
+/// assert_eq!(get_ltl(&data, 0, 0), 0x0);
+/// assert_eq!(get_ltl(&data, 0, 4), 0x78563412);
+/// ```
+fn get_ltl(data: &Vec<u8>, idx: usize, size: usize) -> usize {
+    let mut addr: usize = 0;
+    for i in 0..size {
+        addr |= (data[idx + i] as usize) << (8 * i);
+    }
+    addr
+}
+
 fn is_not_elf(data: &Vec<u8>) -> bool {
     if data[0] != 0x7F || data[1] != 'E' as u8 || data[2] != 'L' as u8 || data[3] != 'F' as u8 {
         return true;
@@ -86,28 +107,38 @@ fn is_not_elf(data: &Vec<u8>) -> bool {
     false
 }
 
-fn get_entry_point(data: &Vec<u8>) -> usize {
-    let mut addr: usize = 0;
-    for i in 0..8 {
-        addr |= (data[24 + i] as usize) << (8 * i);
-    }
-    addr
-}
-
+const PROGRAM_HEADER_OFFSET: usize = 0x20;
+const PROGRAM_HEADER_SIZE_OFFSET: usize = 0x36;
+const PROGRAM_HEADER_NUM_OFFSET: usize = 0x38;
+const SEGMENT_TYPE_LOAD: usize = 0x1;
+const SEGMENT_OFFSET_OFFSET: usize = 0x8;
+const SEGMENT_PHYS_ADDR_OFFSET: usize = 0x18;
+const SEGMENT_SIZE_OFFSET: usize = 0x20;
 fn load_program(dram: &mut Dram, data: Vec<u8>) {
-    let p_header_off: usize = get_p_header_off(&data);
-    let p_header_num: usize = get_p_header_num(&data);
-    let p_header_ent_size: usize = get_p_header_ent_size(&data);
-}
+    let ph_off = get_ltl(&data, PROGRAM_HEADER_OFFSET, 8);
+    let ph_size = get_ltl(&data, PROGRAM_HEADER_SIZE_OFFSET, 2);
+    let ph_num = get_ltl(&data, PROGRAM_HEADER_NUM_OFFSET, 2);
+    // println!("ph_off: 0x{:016X}", ph_off);
+    // println!("ph_size: 0x{:04X}", ph_size);
+    // println!("ph_num: 0x{:04X}", ph_num);
 
-fn get_p_header_off(data: &Vec<u8>) -> usize {
-    0
-}
+    for i in 0..ph_num {
+        let ph_addr = ph_off * (i + 1);
+        let seg_type = get_ltl(&data, ph_addr, 4);
+        if seg_type != SEGMENT_TYPE_LOAD {
+            continue;
+        }
+        // println!("seg_type: 0x{:04X}", seg_type);
+        let seg_off = get_ltl(&data, ph_addr + SEGMENT_OFFSET_OFFSET, 8);
+        // println!("seg_off: 0x{:016X}", seg_off);
+        let seg_phys_addr = get_ltl(&data, ph_addr + SEGMENT_PHYS_ADDR_OFFSET, 8);
+        // println!("seg_phys_addr: 0x{:016X}", seg_phys_addr);
+        let seg_size = get_ltl(&data, ph_addr + SEGMENT_SIZE_OFFSET, 8);
+        // println!("seg_size: 0x{:016X}", seg_size);
+        dram.load_seg(&data, seg_off, seg_phys_addr, seg_size);
 
-fn get_p_header_num(data: &Vec<u8>) -> usize {
-    0
-}
-
-fn get_p_header_ent_size(data: &Vec<u8>) -> usize {
-    0
+        // dram.prange(0x8000_0000, 0x8000_0040);
+        // let mut b = String::new();
+        // std::io::stdin().read_line(&mut b).ok();
+    }
 }
