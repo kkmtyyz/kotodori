@@ -410,7 +410,7 @@ impl Instruction {
             self.opcode, self.name, self.fmt, self.raw_inst
         );
         println!(
-            "rs1: {:05b}, rs2: {:05b}, rd: {:05b}, imm: {:019b}",
+            "rs1: {:05b}, rs2: {:05b}, rd: {:05b}, imm: {:032b}",
             self.rs1, self.rs2, self.rd, self.imm
         );
     }

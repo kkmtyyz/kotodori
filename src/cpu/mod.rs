@@ -703,20 +703,25 @@ impl Cpu {
     }
 
     pub fn run(&mut self) {
-        for _ in 0..10 {
-            // in dev
-            //loop { // in prod
+        loop {
             let data = self.fetch();
             let inst = Instruction::decode(data);
             println!("instruction: ");
             inst.print();
 
+            let pre_pc = self.pc;
             self.exec_instruction(&inst);
-            match inst.name {
-                InstName::Jal(_) => (),
-                _ => self.pc += 4,
+            if pre_pc == self.pc {
+                self.pc += 4;
             }
+
             // println!("pc: 0x{:016X}", self.pc);
+            let mut b = String::new();
+            std::io::stdin().read_line(&mut b).ok();
+            if b.trim() == "p".to_string() {
+                self.print();
+                self.bus.pdram_range(0x8000_000, 0x8000_0040);
+            }
         }
     }
 
@@ -959,7 +964,12 @@ impl Cpu {
 
     /// x[rd] = x[rs1] + sext(immediate)
     fn addi(&mut self, inst: &Instruction) {
-        let v = self.get_reg(inst.rs1) as i64 + inst.imm as i64;
+        // Sign-extended when imm is negative. (imm is 12bit)
+        let mut imm = inst.imm as u64;
+        if 0x800 & imm == 0x800 {
+            imm |= 0xFFFF_FFFF_FFFF_F000;
+        }
+        let v = self.get_reg(inst.rs1) as i64 + imm as i64;
         self.set_reg(inst.rd, v as u64);
     }
 

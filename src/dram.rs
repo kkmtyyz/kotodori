@@ -1,4 +1,4 @@
-use crate::conf::MEMORY_OFF;
+use crate::conf::MEM_OFF;
 
 #[derive(Debug)]
 pub struct Dram {
@@ -14,15 +14,15 @@ impl Dram {
 
     #[inline(always)]
     fn set_mem(&mut self, idx: usize, data: u8) {
-        if self.memory.len() < idx - MEMORY_OFF {
+        if self.memory.len() < idx {
             panic!("access to invalid address");
         }
-        self.memory[idx - MEMORY_OFF] = data;
+        self.memory[idx] = data;
     }
 
     #[inline(always)]
     fn get_mem(&self, idx: usize) -> u8 {
-        match self.memory.get(idx - MEMORY_OFF) {
+        match self.memory.get(idx) {
             Some(data) => *data,
             None => panic!("access to invalid address: 0x{:016X}", idx),
         }
@@ -70,10 +70,10 @@ impl Dram {
 
         // to little endian
         for i in (0..data.len()).step_by(4) {
-            self.set_mem(i + MEMORY_OFF, data[i + 3]);
-            self.set_mem(i + 1 + MEMORY_OFF, data[i + 2]);
-            self.set_mem(i + 2 + MEMORY_OFF, data[i + 1]);
-            self.set_mem(i + 3 + MEMORY_OFF, data[i]);
+            self.set_mem(i + MEM_OFF, data[i + 3]);
+            self.set_mem(i + 1 + MEM_OFF, data[i + 2]);
+            self.set_mem(i + 2 + MEM_OFF, data[i + 1]);
+            self.set_mem(i + 3 + MEM_OFF, data[i]);
         }
     }
 
@@ -89,7 +89,7 @@ impl Dram {
         }
 
         for i in 0..seg_size {
-            self.set_mem(seg_phys_addr + i, data[seg_off + i]);
+            self.set_mem(seg_phys_addr + i - MEM_OFF, data[seg_off + i]);
         }
     }
 

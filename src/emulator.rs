@@ -4,7 +4,7 @@ use std::path::Path;
 
 use crate::bus::Bus;
 use crate::cmd::Command;
-use crate::conf::MEMORY_OFF;
+use crate::conf::MEM_OFF;
 use crate::cpu::Cpu;
 use crate::dram::Dram;
 
@@ -16,7 +16,7 @@ pub struct Emulator {
 impl Emulator {
     pub fn new(cmd: Command) -> Emulator {
         let mut dram = Dram::new(cmd.mem_size.unwrap());
-        let mut entry_point = MEMORY_OFF;
+        let mut entry_point = MEM_OFF;
         if let Some(in_f) = cmd.in_f.clone() {
             Emulator::load_file_to_dram(&mut dram, in_f);
         }
@@ -111,6 +111,7 @@ const PROGRAM_HEADER_OFFSET: usize = 0x20;
 const PROGRAM_HEADER_SIZE_OFFSET: usize = 0x36;
 const PROGRAM_HEADER_NUM_OFFSET: usize = 0x38;
 const SEGMENT_TYPE_LOAD: usize = 0x1;
+// const SEGMENT_TYPE_GNU_STACK: usize = 0x6474E551;
 const SEGMENT_OFFSET_OFFSET: usize = 0x8;
 const SEGMENT_PHYS_ADDR_OFFSET: usize = 0x18;
 const SEGMENT_SIZE_OFFSET: usize = 0x20;
@@ -123,7 +124,7 @@ fn load_program(dram: &mut Dram, data: Vec<u8>) {
     // println!("ph_num: 0x{:04X}", ph_num);
 
     for i in 0..ph_num {
-        let ph_addr = ph_off * (i + 1);
+        let ph_addr = ph_off + (i * ph_size);
         let seg_type = get_ltl(&data, ph_addr, 4);
         if seg_type != SEGMENT_TYPE_LOAD {
             continue;
@@ -136,9 +137,5 @@ fn load_program(dram: &mut Dram, data: Vec<u8>) {
         let seg_size = get_ltl(&data, ph_addr + SEGMENT_SIZE_OFFSET, 8);
         // println!("seg_size: 0x{:016X}", seg_size);
         dram.load_seg(&data, seg_off, seg_phys_addr, seg_size);
-
-        // dram.prange(0x8000_0000, 0x8000_0040);
-        // let mut b = String::new();
-        // std::io::stdin().read_line(&mut b).ok();
     }
 }
