@@ -1,4 +1,4 @@
-fn to_format(opcode: u8) -> InstFmt {
+fn to_format(opcode: u8, funct3: u8, funct7: u8) -> InstFmt {
     match opcode {
         0b011_0111 => InstFmt::U,
         0b001_0111 => InstFmt::U,
@@ -10,7 +10,14 @@ fn to_format(opcode: u8) -> InstFmt {
         0b001_0011 => InstFmt::I,
         0b011_0011 => InstFmt::R,
         0b000_1111 => InstFmt::I,
-        0b111_0011 => InstFmt::I,
+        0b111_0011 => match funct3 {
+            0b000 => match funct7 {
+                0b000_0000 => InstFmt::I,
+                _ => InstFmt::R,
+            },
+            _ => InstFmt::I,
+        },
+        0b001_1011 => InstFmt::I,
         _ => panic!("convert to instruction format"),
     }
 }
@@ -113,10 +120,16 @@ fn to_name(opcode: u8, funct3: u8, funct7: u8, funct12: u16) -> InstName {
             _ => panic!("convert to instruction name"),
         },
         0b111_0011 => match funct3 {
-            0b000 => match funct12 {
-                0b0000_0000_0000 => InstName::Ecall("ecall".to_owned()),
-                0b0000_0000_0001 => InstName::Ebreak("ebreak".to_owned()),
-                _ => panic!("convert to instruction name"),
+            0b000 => match funct7 {
+                0b000_1001 => InstName::SfenceVma("sfence.vma".to_owned()),
+                _ => match funct12 {
+                    0b0000_0000_0000 => InstName::Ecall("ecall".to_owned()),
+                    0b0000_0000_0001 => InstName::Ebreak("ebreak".to_owned()),
+                    0b0001_0000_0010 => InstName::Sret("sret".to_owned()),
+                    0b0011_0000_0010 => InstName::Mret("mret".to_owned()),
+                    0b0001_0000_0101 => InstName::Wfi("wfi".to_owned()),
+                    _ => panic!("convert to instruction name"),
+                },
             },
             0b001 => InstName::Csrrw("csrrw".to_owned()),
             0b010 => InstName::Csrrs("csrrs".to_owned()),
@@ -160,6 +173,16 @@ fn to_name(opcode: u8, funct3: u8, funct7: u8, funct12: u16) -> InstName {
                 _ => panic!("convert to instruction name"),
             }
         }
+        0b001_1011 => match funct3 {
+            0b000 => InstName::Addiw("addiw".to_owned()),
+            0b001 => InstName::Slliw("slliw".to_owned()),
+            0b101 => match funct7 {
+                0b000_0000 => InstName::Srliw("srliw".to_owned()),
+                0b010_0000 => InstName::Sraiw("sraiw".to_owned()),
+                _ => panic!("convert to instruction name"),
+            },
+            _ => panic!("convert to instruction name"),
+        },
         0b011_1011 => match funct3 {
             0b000 => match funct7 {
                 0b000_0000 => InstName::Addw("addw".to_owned()),
@@ -243,6 +266,10 @@ pub enum InstName {
     Csrrwi(String),
     Csrrsi(String),
     Csrrci(String),
+    Sret(String),
+    Mret(String),
+    Wfi(String),
+    SfenceVma(String),
 
     // RV32A
     Mul(String),
@@ -388,7 +415,10 @@ pub struct Instruction {
 impl Instruction {
     pub fn decode(inst: u32) -> Instruction {
         let opcode = (inst & 0b0111_1111) as u8;
-        let fmt = to_format(opcode);
+        // TODO refactoring
+        let funct3 = (inst >> 12 & 0b111) as u8;
+        let funct7 = (inst >> 25 & 0b111_1111) as u8;
+        let fmt = to_format(opcode, funct3, funct7);
         let (funct3, funct7, funct12) = to_funct(inst, &fmt);
         let name = to_name(opcode, funct3, funct7, funct12);
         let (rs1, rs2, rd, imm) = to_ri(inst, &fmt);

@@ -738,6 +738,7 @@ impl Cpu {
 
     fn exec_instruction(&mut self, inst: &Instruction) {
         match inst.name {
+            // RV32I
             InstName::Lui(_) => self.lui(inst),
             InstName::Auipc(_) => self.auipc(inst),
             InstName::Jal(_) => self.jal(inst),
@@ -785,6 +786,12 @@ impl Cpu {
             InstName::Csrrwi(_) => self.csrrwi(inst),
             InstName::Csrrsi(_) => self.csrrsi(inst),
             InstName::Csrrci(_) => self.csrrci(inst),
+            InstName::Sret(_) => self.sret(inst),
+            InstName::Mret(_) => self.mret(inst),
+            InstName::Wfi(_) => self.wfi(inst),
+            InstName::SfenceVma(_) => self.sfence_vma(inst),
+
+            // RV32A
             InstName::Mul(_) => self.mul(inst),
             InstName::Mulh(_) => self.mulh(inst),
             InstName::Mulhsu(_) => self.mulhsu(inst),
@@ -793,6 +800,8 @@ impl Cpu {
             InstName::Divu(_) => self.divu(inst),
             InstName::Rem(_) => self.rem(inst),
             InstName::Remu(_) => self.remu(inst),
+
+            // RV32A
             InstName::LrW(_) => self.lr_w(inst),
             InstName::ScW(_) => self.sc_w(inst),
             InstName::AmoswapW(_) => self.amoswap_w(inst),
@@ -804,6 +813,8 @@ impl Cpu {
             InstName::AmomaxW(_) => self.amomax_w(inst),
             InstName::AmominuW(_) => self.amominu_w(inst),
             InstName::AmomaxuW(_) => self.amomaxu_w(inst),
+
+            // RV64I
             InstName::Lwu(_) => self.lwu(inst),
             InstName::Ld(_) => self.ld(inst),
             InstName::Sd(_) => self.sd(inst),
@@ -816,11 +827,15 @@ impl Cpu {
             InstName::Sllw(_) => self.sllw(inst),
             InstName::Srlw(_) => self.srlw(inst),
             InstName::Sraw(_) => self.sraw(inst),
+
+            // RV64M
             InstName::Mulw(_) => self.mulw(inst),
             InstName::Divw(_) => self.divw(inst),
             InstName::Divuw(_) => self.divuw(inst),
             InstName::Remw(_) => self.remw(inst),
             InstName::Remuw(_) => self.remuw(inst),
+
+            // RV64A
             InstName::LrD(_) => self.lr_d(inst),
             InstName::ScD(_) => self.sc_d(inst),
             InstName::AmoswapD(_) => self.amoswap_d(inst),
@@ -1174,6 +1189,18 @@ impl Cpu {
         self.set_csr(csr, t & !(zimm as u64));
         self.set_reg(inst.rd, t);
     }
+
+    /// ExceptionReturn(User)
+    fn sret(&mut self, inst: &Instruction) {}
+
+    /// ExceptionReturn(Machine)
+    fn mret(&mut self, inst: &Instruction) {}
+
+    /// while (noInterruptsPending) idle
+    fn wfi(&mut self, inst: &Instruction) {}
+
+    /// Fence(Store, AddressTranslation)
+    fn sfence_vma(&mut self, inst: &Instruction) {}
 
     /// x[rd] = x[rs1] × x[rs2]
     fn mul(&mut self, inst: &Instruction) {
