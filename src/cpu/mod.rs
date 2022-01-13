@@ -342,9 +342,9 @@ impl Cpu {
         println!("s1:0x{:016X}, 0b{:064b}", self.s1, self.s1);
         println!("a0:0x{:016X}, 0b{:064b}", self.a0, self.a0);
         println!("a1:0x{:016X}, 0b{:064b}", self.a1, self.a1);
-        println!("a6:0x{:016X}, 0b{:064b}", self.a6, self.a6);
-        println!("a7:0x{:016X}, 0b{:064b}", self.a7, self.a7);
         println!("a2:0x{:016X}, 0b{:064b}", self.a2, self.a2);
+        println!("a3:0x{:016X}, 0b{:064b}", self.a3, self.a3);
+        println!("a4:0x{:016X}, 0b{:064b}", self.a4, self.a4);
         println!("a5:0x{:016X}, 0b{:064b}", self.a5, self.a5);
         println!("a6:0x{:016X}, 0b{:064b}", self.a6, self.a6);
         println!("a7:0x{:016X}, 0b{:064b}", self.a7, self.a7);
@@ -363,6 +363,18 @@ impl Cpu {
         println!("t5:0x{:016X}, 0b{:064b}", self.t5, self.t5);
         println!("t6:0x{:016X}, 0b{:064b}", self.t6, self.t6);
         println!("pc:0x{:016X}, 0b{:064b}", self.pc, self.pc);
+        println!("mstatus:0x{:016X}, 0b{:064b}", self.mstatus, self.mstatus);
+        println!("mepc:0x{:016X}, 0b{:064b}", self.mepc, self.mepc);
+        println!("medeleg:0x{:016X}, 0b{:064b}", self.medeleg, self.medeleg);
+        println!("mideleg:0x{:016X}, 0b{:064b}", self.mideleg, self.mideleg);
+        println!("sstatus:0x{:016X}, 0b{:064b}", self.sstatus, self.sstatus);
+        println!("sie:0x{:016X}, 0b{:064b}", self.sie, self.sie);
+        println!("satp:0x{:016X}, 0b{:064b}", self.satp, self.satp);
+        println!(
+            "pmpaddr0:0x{:016X}, 0b{:064b}",
+            self.pmpaddr0, self.pmpaddr0
+        );
+        println!("pmpcfg0:0x{:016X}, 0b{:064b}", self.pmpcfg0, self.pmpcfg0);
     }
 
     pub fn pdram_range(&self, begin: usize, end: usize) {
@@ -869,6 +881,7 @@ impl Cpu {
         self.pc = v as u64;
     }
 
+    // TODO bug fix
     /// t =pc+4; pc=(x[rs1]+sext(offset))&∼1; x[rd]=t
     fn jalr(&mut self, inst: &Instruction) {
         let t = self.pc + 4;
@@ -1194,7 +1207,18 @@ impl Cpu {
     fn sret(&mut self, inst: &Instruction) {}
 
     /// ExceptionReturn(Machine)
-    fn mret(&mut self, inst: &Instruction) {}
+    fn mret(&mut self, inst: &Instruction) {
+        let mpp = self.mstatus & 0b1_1000_0000_0000;
+        let mpie = self.mstatus & 0b100_0000;
+        let mie = mpie >> 3;
+        self.mstatus |= mie;
+        let mpie: u64 = 0b100_0000;
+        self.mstatus |= mpie;
+        let mpp: u64 = 0b1_1000_0000_0000;
+        self.mstatus &= !mpp; // mpp = 0; U-MODE
+        let mprv: u64 = 0b10_0000_0000_0000_0000;
+        self.mstatus &= !mprv; // mprv = 0;
+    }
 
     /// while (noInterruptsPending) idle
     fn wfi(&mut self, inst: &Instruction) {}
