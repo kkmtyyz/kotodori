@@ -720,6 +720,7 @@ impl Cpu {
             let inst = Instruction::decode(data);
             println!("instruction: ");
             inst.print();
+            println!("pc: 0x{:016X}", self.pc);
 
             let pre_pc = self.pc;
             self.exec_instruction(&inst);
@@ -876,17 +877,18 @@ impl Cpu {
 
     /// x[rd] = pc+4; pc += sext(offset)
     fn jal(&mut self, inst: &Instruction) {
+        let imm = b20_to_sign64(inst.imm);
         self.set_reg(inst.rd, self.pc + 4);
-        let v = self.pc as i64 + inst.imm as i64;
+        let v = self.pc as i64 + imm;
         self.pc = v as u64;
     }
 
-    // TODO bug fix
     /// t =pc+4; pc=(x[rs1]+sext(offset))&∼1; x[rd]=t
     fn jalr(&mut self, inst: &Instruction) {
         let t = self.pc + 4;
 
-        let v = (self.get_reg(inst.rs1) as i64 + inst.imm as i64) as u64;
+        let imm = b12_to_sign64(inst.imm);
+        let v = (self.get_reg(inst.rs1) as i64 + imm) as u64;
         self.pc = v & !1;
 
         self.set_reg(inst.rd, t);
@@ -992,12 +994,8 @@ impl Cpu {
 
     /// x[rd] = x[rs1] + sext(immediate)
     fn addi(&mut self, inst: &Instruction) {
-        // Sign-extended when imm is negative. (imm is 12bit)
-        let mut imm = inst.imm as u64;
-        if 0x800 & imm == 0x800 {
-            imm |= 0xFFFF_FFFF_FFFF_F000;
-        }
-        let v = self.get_reg(inst.rs1) as i64 + imm as i64;
+        let imm = b12_to_sign64(inst.imm);
+        let v = self.get_reg(inst.rs1) as i64 + imm;
         self.set_reg(inst.rd, v as u64);
     }
 
@@ -1204,7 +1202,18 @@ impl Cpu {
     }
 
     /// ExceptionReturn(User)
-    fn sret(&mut self, inst: &Instruction) {}
+    fn sret(&mut self, inst: &Instruction) {
+        let spp = self.sstatus & 0b1_1000_0000_0000;
+        let spie = self.sstatus & 0b100_0000;
+        let sie = spie >> 3;
+        self.sstatus |= sie;
+        let spie: u64 = 0b100_0000;
+        self.sstatus |= spie;
+        let spp: u64 = 0b1_1000_0000_0000;
+        self.sstatus &= !spp; // mpp = 0; U-MODE
+        let sprv: u64 = 0b10_0000_0000_0000_0000;
+        self.sstatus &= !sprv; // mprv = 0;
+    }
 
     /// ExceptionReturn(Machine)
     fn mret(&mut self, inst: &Instruction) {
@@ -1221,10 +1230,16 @@ impl Cpu {
     }
 
     /// while (noInterruptsPending) idle
-    fn wfi(&mut self, inst: &Instruction) {}
+    #[allow(unused_variables)]
+    fn wfi(&mut self, inst: &Instruction) {
+        // Implement when needed.
+    }
 
     /// Fence(Store, AddressTranslation)
-    fn sfence_vma(&mut self, inst: &Instruction) {}
+    #[allow(unused_variables)]
+    fn sfence_vma(&mut self, inst: &Instruction) {
+        // Implement when needed.
+    }
 
     /// x[rd] = x[rs1] × x[rs2]
     fn mul(&mut self, inst: &Instruction) {
@@ -1455,7 +1470,9 @@ impl Cpu {
 
     /// x[rd] = M[x[rs1] + sext(offset)][63:0]
     fn ld(&mut self, inst: &Instruction) {
-        let addr = self.get_reg(inst.rs1) as i64 + inst.imm as i64;
+        let imm = b12_to_sign64(inst.imm);
+        let addr = self.get_reg(inst.rs1) as i64 + imm;
+        println!("addr: 0x{:016X}", addr);
         let v = self.bus.ld_dram(addr as u64);
         self.set_reg(inst.rd, v);
     }
@@ -1681,4 +1698,24 @@ impl Cpu {
             self.bus.sd_dram(addr, data);
         }
     }
+}
+
+/// Sign-extended when imm is negative. (imm is 12bit)
+fn b12_to_sign64(imm: u32) -> i64 {
+    if 0x800 & imm == 0x800 {
+        return (imm as u64 | 0xFFFF_FFFF_FFFF_F000) as i64;
+    }
+    imm as i64
+}
+
+/// Sign-extended when imm is negative. (imm is 20bit)
+fn b20_to_sign64(imm: u32) -> i64 {
+    if 0x800 & imm == 0x800 {
+        return (imm as u64 | 0xFFFF_FFFF_FFFF_F000) as i64;
+    }
+
+    if 0x10_0000 & imm == 0x10_0000 {
+        return (imm as u64 | 0xFFFF_FFFF_FFE0_0000) as i64;
+    }
+    imm as i64
 }
