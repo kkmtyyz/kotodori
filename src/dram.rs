@@ -33,6 +33,8 @@ impl Dram {
     }
 
     pub fn prange(&self, mut begin: usize, mut end: usize) {
+        begin -= MEM_OFF;
+        end -= MEM_OFF;
         if begin % 16 != 0 {
             begin -= begin % 16;
         }

@@ -338,9 +338,7 @@ fn to_funct(inst: u32, fmt: &InstFmt) -> (u8, u8, u16) {
             funct3 = (inst >> 12 & 0b111) as u8;
             if let InstFmt::I | InstFmt::R = fmt {
                 funct7 = (inst >> 25 & 0b111_1111) as u8;
-            }
-            if let InstFmt::I = fmt {
-                funct12 = (inst >> 20 & 0b1111_1111_1111) as u16
+                funct12 = (inst >> 20 & 0b1111_1111_1111) as u16;
             }
         }
         _ => (),

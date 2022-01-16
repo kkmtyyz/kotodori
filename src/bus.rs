@@ -1,4 +1,3 @@
-use crate::conf::MEM_OFF;
 use crate::dram::Dram;
 
 #[derive(Debug)]
@@ -21,38 +20,38 @@ impl Bus {
     }
 
     pub fn pdram_range(&self, begin: usize, end: usize) {
-        self.dram.prange(begin - MEM_OFF, end - MEM_OFF);
+        self.dram.prange(begin, end);
     }
 
     pub fn lb_dram(&self, addr: u64) -> u8 {
-        self.dram.load_byte(addr - MEM_OFF as u64)
+        self.dram.load_byte(addr)
     }
 
     pub fn lh_dram(&self, addr: u64) -> u16 {
-        self.dram.load_hword(addr - MEM_OFF as u64)
+        self.dram.load_hword(addr)
     }
 
     pub fn lw_dram(&self, addr: u64) -> u32 {
-        self.dram.load_word(addr - MEM_OFF as u64)
+        self.dram.load_word(addr)
     }
 
     pub fn ld_dram(&self, addr: u64) -> u64 {
-        self.dram.load_dword(addr - MEM_OFF as u64)
+        self.dram.load_dword(addr)
     }
 
     pub fn sb_dram(&mut self, addr: u64, data: u8) {
-        self.dram.store_byte(addr - MEM_OFF as u64, data);
+        self.dram.store_byte(addr, data);
     }
 
     pub fn sh_dram(&mut self, addr: u64, data: u16) {
-        self.dram.store_hword(addr - MEM_OFF as u64, data);
+        self.dram.store_hword(addr, data);
     }
 
     pub fn sw_dram(&mut self, addr: u64, data: u32) {
-        self.dram.store_word(addr - MEM_OFF as u64, data);
+        self.dram.store_word(addr, data);
     }
 
     pub fn sd_dram(&mut self, addr: u64, data: u64) {
-        self.dram.store_dword(addr - MEM_OFF as u64, data);
+        self.dram.store_dword(addr, data);
     }
 }

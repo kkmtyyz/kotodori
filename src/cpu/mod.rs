@@ -1,14 +1,22 @@
 pub mod instructions;
+use crate::conf::MEM_OFF;
 
 use crate::bus::Bus;
 use crate::conf;
 use instructions::InstName;
 use instructions::Instruction;
 
+const MTIME: u64 = 0x200_BFF8;
+const MTIMECMP: u64 = 0x200_4000;
+
 #[derive(Debug)]
 pub struct Cpu {
     bus: Bus,
     mem_reserved_w: Vec<u8>,
+
+    // memory mapped
+    mtime: u64,
+    mtimecmp: u64,
 
     // registers
     zero: u64,
@@ -172,6 +180,9 @@ impl Cpu {
         Cpu {
             bus,
             mem_reserved_w: vec![0; mem_size / 32],
+
+            mtime: 0,
+            mtimecmp: 0,
 
             zero: 0,
             ra: 0,
@@ -375,6 +386,12 @@ impl Cpu {
             self.pmpaddr0, self.pmpaddr0
         );
         println!("pmpcfg0:0x{:016X}, 0b{:064b}", self.pmpcfg0, self.pmpcfg0);
+        println!("mtime:0x{:016X}, 0b{:064b}", self.mtime, self.mtime);
+        println!(
+            "mtimecmp:0x{:016X}, 0b{:064b}",
+            self.mtimecmp, self.mtimecmp
+        );
+        println!("mtvec:0x{:016X}, 0b{:064b}", self.mtvec, self.mtvec);
     }
 
     pub fn pdram_range(&self, begin: usize, end: usize) {
@@ -709,6 +726,22 @@ impl Cpu {
         }
     }
 
+    fn l_mm(&self, addr: u64) -> u64 {
+        match addr {
+            MTIME => self.mtime,
+            MTIMECMP => self.mtimecmp,
+            _ => panic!("invalid memory mapped address"),
+        }
+    }
+
+    fn s_mm(&mut self, addr: u64, data: u64) {
+        match addr {
+            MTIME => self.mtime = data,
+            MTIMECMP => self.mtimecmp = data,
+            _ => panic!("invalid memory mapped address: 0x{:016X}", addr),
+        }
+    }
+
     pub fn init(&mut self, entry_point: usize) {
         self.sp = conf::STACK_BOTTOM;
         self.pc = entry_point as u64;
@@ -739,7 +772,7 @@ impl Cpu {
     }
 
     fn fetch(&self) -> u32 {
-        let mut ltl_data = self.bus.lw_dram(self.pc); // little endian data
+        let mut ltl_data = self.bus.lw_dram(self.pc - MEM_OFF as u64); // little endian data
         let mut data: u32 = 0;
         for _ in 0..4 {
             data <<= 8;
@@ -939,57 +972,102 @@ impl Cpu {
     /// x[rd] = sext(M[x[rs1] + sext(offset)][7:0])
     fn lb(&mut self, inst: &Instruction) {
         let addr = self.get_reg(inst.rs1) as i64 + inst.imm as i64;
-        let v = self.bus.lb_dram(addr as u64) as i64;
+        let v: i64;
+        if (addr as usize) < MEM_OFF {
+            v = self.l_mm(addr as u64) as u8 as i64;
+        } else {
+            let addr = (addr - MEM_OFF as i64) as u64;
+            v = self.bus.lb_dram(addr) as i64;
+        }
         self.set_reg(inst.rd, v as u64);
     }
 
     /// x[rd] = sext(M[x[rs1] + sext(offset)][15:0])
     fn lh(&mut self, inst: &Instruction) {
         let addr = self.get_reg(inst.rs1) as i64 + inst.imm as i64;
-        let v = self.bus.lh_dram(addr as u64) as i64;
+        let v: i64;
+        if (addr as usize) < MEM_OFF {
+            v = self.l_mm(addr as u64) as u16 as i64;
+        } else {
+            let addr = (addr - MEM_OFF as i64) as u64;
+            v = self.bus.lh_dram(addr) as i64;
+        }
         self.set_reg(inst.rd, v as u64);
     }
 
     /// x[rd] = sext(M[x[rs1] + sext(offset)][31:0])
     fn lw(&mut self, inst: &Instruction) {
         let addr = self.get_reg(inst.rs1) as i64 + inst.imm as i64;
-        let v = self.bus.lw_dram(addr as u64) as i64;
+        let v: i64;
+        if (addr as usize) < MEM_OFF {
+            v = self.l_mm(addr as u64) as u32 as i64;
+        } else {
+            let addr = (addr - MEM_OFF as i64) as u64;
+            v = self.bus.lw_dram(addr as u64) as i64;
+        }
         self.set_reg(inst.rd, v as u64);
     }
 
     /// x[rd] = M[x[rs1] + sext(offset)][7:0]
     fn lbu(&mut self, inst: &Instruction) {
         let addr = self.get_reg(inst.rs1) as i64 + inst.imm as i64;
-        let v = self.bus.lb_dram(addr as u64);
-        self.set_reg(inst.rd, v as u64);
+        let v: u64;
+        if (addr as usize) < MEM_OFF {
+            v = self.l_mm(addr as u64) as u8 as u64;
+        } else {
+            let addr = (addr - MEM_OFF as i64) as u64;
+            v = self.bus.lb_dram(addr as u64) as u64;
+        }
+        self.set_reg(inst.rd, v);
     }
 
     /// x[rd] = M[x[rs1] + sext(offset)][15:0]
     fn lhu(&mut self, inst: &Instruction) {
         let addr = self.get_reg(inst.rs1) as i64 + inst.imm as i64;
-        let v = self.bus.lh_dram(addr as u64);
-        self.set_reg(inst.rd, v as u64);
+        let v: u64;
+        if (addr as usize) < MEM_OFF {
+            v = self.l_mm(addr as u64) as u16 as u64;
+        } else {
+            let addr = (addr - MEM_OFF as i64) as u64;
+            v = self.bus.lh_dram(addr as u64) as u64;
+        }
+        self.set_reg(inst.rd, v);
     }
 
     /// M[x[rs1] + sext(offset)] = x[rs2][7:0]
     fn sb(&mut self, inst: &Instruction) {
         let v = self.get_reg(inst.rs2) as u8;
         let addr = self.get_reg(inst.rs1) as i64 + inst.imm as i64;
-        self.bus.sb_dram(addr as u64, v);
+        if (addr as usize) < MEM_OFF {
+            self.s_mm(addr as u64, v as u64);
+        } else {
+            let addr = (addr - MEM_OFF as i64) as u64;
+            self.bus.sb_dram(addr as u64, v);
+        }
     }
 
     /// M[x[rs1] + sext(offset)] = x[rs2][15:0]
     fn sh(&mut self, inst: &Instruction) {
         let v = self.get_reg(inst.rs2) as u16;
         let addr = self.get_reg(inst.rs1) as i64 + inst.imm as i64;
-        self.bus.sh_dram(addr as u64, v);
+        if (addr as usize) < MEM_OFF {
+            self.s_mm(addr as u64, v as u64);
+        } else {
+            let addr = (addr - MEM_OFF as i64) as u64;
+            self.bus.sh_dram(addr as u64, v);
+        }
     }
 
     /// M[x[rs1] + sext(offset)] = x[rs2][31:0]
     fn sw(&mut self, inst: &Instruction) {
         let v = self.get_reg(inst.rs2) as u32;
         let addr = self.get_reg(inst.rs1) as i64 + inst.imm as i64;
-        self.bus.sw_dram(addr as u64, v);
+        if (addr as usize) < MEM_OFF {
+            self.s_mm(addr as u64, v as u64);
+        } else {
+            let addr = (addr - MEM_OFF as i64) as u64;
+            self.bus.sw_dram(addr as u64, v);
+        }
     }
 
     /// x[rd] = x[rs1] + sext(immediate)
@@ -1213,6 +1291,7 @@ impl Cpu {
         self.sstatus &= !spp; // mpp = 0; U-MODE
         let sprv: u64 = 0b10_0000_0000_0000_0000;
         self.sstatus &= !sprv; // mprv = 0;
+        self.pc = self.sepc;
     }
 
     /// ExceptionReturn(Machine)
@@ -1227,6 +1306,7 @@ impl Cpu {
         self.mstatus &= !mpp; // mpp = 0; U-MODE
         let mprv: u64 = 0b10_0000_0000_0000_0000;
         self.mstatus &= !mprv; // mprv = 0;
+        self.pc = self.mepc;
     }
 
     /// while (noInterruptsPending) idle
@@ -1464,16 +1544,27 @@ impl Cpu {
     /// x[rd] = M[x[rs1] + sext(offset)][31:0]
     fn lwu(&mut self, inst: &Instruction) {
         let addr = self.get_reg(inst.rs1) as i64 + inst.imm as i64;
-        let v = self.bus.lw_dram(addr as u64);
-        self.set_reg(inst.rd, v as u64);
+        let v: u64;
+        if (addr as usize) < MEM_OFF {
+            v = self.l_mm(addr as u64) as u32 as u64;
+        } else {
+            let addr = (addr - MEM_OFF as i64) as u64;
+            v = self.bus.lw_dram(addr as u64) as u64;
+        }
+        self.set_reg(inst.rd, v);
     }
 
     /// x[rd] = M[x[rs1] + sext(offset)][63:0]
     fn ld(&mut self, inst: &Instruction) {
         let imm = b12_to_sign64(inst.imm);
         let addr = self.get_reg(inst.rs1) as i64 + imm;
-        println!("addr: 0x{:016X}", addr);
-        let v = self.bus.ld_dram(addr as u64);
+        let v: u64;
+        if (addr as usize) < MEM_OFF {
+            v = self.l_mm(addr as u64);
+        } else {
+            let addr = (addr - MEM_OFF as i64) as u64;
+            v = self.bus.ld_dram(addr as u64);
+        }
         self.set_reg(inst.rd, v);
     }
 
@@ -1481,7 +1572,12 @@ impl Cpu {
     fn sd(&mut self, inst: &Instruction) {
         let v = self.get_reg(inst.rs2);
         let addr = self.get_reg(inst.rs1) as i64 + inst.imm as i64;
-        self.bus.sd_dram(addr as u64, v);
+        if (addr as usize) < MEM_OFF {
+            self.s_mm(addr as u64, v);
+        } else {
+            let addr = (addr - MEM_OFF as i64) as u64;
+            self.bus.sd_dram(addr as u64, v);
+        }
     }
 
     /// x[rd] = sext((x[rs1] + sext(immediate))[31:0])
