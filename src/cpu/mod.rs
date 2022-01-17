@@ -1,5 +1,6 @@
 pub mod instructions;
 use crate::conf::MEM_OFF;
+use chrono::{DateTime, Duration, Local};
 
 use crate::bus::Bus;
 use crate::conf;
@@ -13,6 +14,7 @@ const MTIMECMP: u64 = 0x200_4000;
 pub struct Cpu {
     bus: Bus,
     mem_reserved_w: Vec<u8>,
+    time: DateTime<Local>,
 
     // memory mapped
     mtime: u64,
@@ -183,6 +185,7 @@ impl Cpu {
 
             mtime: 0,
             mtimecmp: 0,
+            time: Local::now(),
 
             zero: 0,
             ra: 0,
@@ -375,6 +378,8 @@ impl Cpu {
         println!("t6:0x{:016X}, 0b{:064b}", self.t6, self.t6);
         println!("pc:0x{:016X}, 0b{:064b}", self.pc, self.pc);
         println!("mstatus:0x{:016X}, 0b{:064b}", self.mstatus, self.mstatus);
+        println!("mie:0x{:016X}, 0b{:064b}", self.mie, self.mie);
+        println!("mip:0x{:016X}, 0b{:064b}", self.mip, self.mip);
         println!("mepc:0x{:016X}, 0b{:064b}", self.mepc, self.mepc);
         println!("medeleg:0x{:016X}, 0b{:064b}", self.medeleg, self.medeleg);
         println!("mideleg:0x{:016X}, 0b{:064b}", self.mideleg, self.mideleg);
@@ -757,6 +762,8 @@ impl Cpu {
 
             let pre_pc = self.pc;
             self.exec_instruction(&inst);
+            self.timer_int();
+
             if pre_pc == self.pc {
                 self.pc += 4;
             }
@@ -780,6 +787,31 @@ impl Cpu {
             ltl_data >>= 8;
         }
         data
+    }
+
+    fn timer_int(&mut self) {
+        let mstatus_mie = (self.mstatus & 0b1000) >> 3;
+        let mie_mtie = (self.mie & 0b1000_0000) >> 7;
+        if (mstatus_mie & mie_mtie) == 0 {
+            return;
+        }
+        self.mip |= 0b1000_0000;
+
+        let duration: Duration = Local::now() - self.time;
+        if let Some(nano) = duration.num_nanoseconds() {
+            if nano <= (self.mtimecmp as i64 * 100) {
+                return;
+            }
+        }
+
+        self.mepc = self.pc;
+        self.pc = self.mtvec;
+        self.mcause = 0x8000_0000_0000_0007; // timer interrupt
+
+        //self.mstatus |= !0b1000; // mstatus.mie = 0
+
+        self.mip |= !0b1000_000;
+        self.time = Local::now();
     }
 
     fn exec_instruction(&mut self, inst: &Instruction) {
