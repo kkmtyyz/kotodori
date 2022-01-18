@@ -763,6 +763,7 @@ impl Cpu {
             let pre_pc = self.pc;
             self.exec_instruction(&inst);
             self.timer_int();
+            self.s_int();
 
             if pre_pc == self.pc {
                 self.pc += 4;
@@ -790,9 +791,9 @@ impl Cpu {
     }
 
     fn timer_int(&mut self) {
-        let mstatus_mie = (self.mstatus & 0b1000) >> 3;
-        let mie_mtie = (self.mie & 0b1000_0000) >> 7;
-        if (mstatus_mie & mie_mtie) == 0 {
+        let mstatus_mie = self.mstatus & 0b1000;
+        let mie_mtie = self.mie & 0b1000_0000;
+        if mstatus_mie != 0b1000 && mie_mtie != 0b1000_0000 {
             return;
         }
         self.mip |= 0b1000_0000;
@@ -807,11 +808,26 @@ impl Cpu {
         self.mepc = self.pc;
         self.pc = self.mtvec;
         self.mcause = 0x8000_0000_0000_0007; // timer interrupt
+        let mstatus_mpie = mstatus_mie << 4;
+        self.mstatus |= mstatus_mpie;
+        self.mstatus &= !0b1000;
 
         //self.mstatus |= !0b1000; // mstatus.mie = 0
 
-        self.mip |= !0b1000_000;
+        self.mip &= !0b1000_000;
         self.time = Local::now();
+    }
+
+    fn s_int(&mut self) {
+        let sstatus_sie = (self.sstatus & 0b10) >> 1;
+        if sstatus_sie == 0 {
+            return;
+        }
+        if (self.sip & self.sie) == 0 {
+            return;
+        }
+        self.sepc = self.pc;
+        self.pc = self.stvec;
     }
 
     fn exec_instruction(&mut self, inst: &Instruction) {
