@@ -774,7 +774,12 @@ impl Cpu {
             std::io::stdin().read_line(&mut b).ok();
             if b.trim() == "p".to_string() {
                 self.print();
-                self.bus.pdram_range(0x8000_000, 0x8000_0040);
+            } else if b.starts_with("m") {
+                let mut b = b.split_whitespace();
+                println!("{}, {}", b.nth(1).unwrap(), b.nth(2).unwrap());
+                let begin = hex_to_usize(b.nth(1).unwrap());
+                let end = hex_to_usize(b.nth(2).unwrap());
+                self.bus.pdram_range(begin, end);
             }
         }
     }
@@ -1862,4 +1867,40 @@ fn b20_to_sign64(imm: u32) -> i64 {
         return (imm as u64 | 0xFFFF_FFFF_FFE0_0000) as i64;
     }
     imm as i64
+}
+
+/// Argument:
+///   hex: 0x0123ABCD
+fn hex_to_usize(hex: &str) -> usize {
+    let mut chars = hex.chars();
+    chars.next(); // remove 0
+    chars.next(); // remove x
+
+    let chars = chars.rev();
+    let mut res: usize = 0;
+    for (i, c) in chars.enumerate() {
+        let v: usize;
+        match c.to_ascii_lowercase() {
+            '0' => v = 0x0,
+            '1' => v = 0x1,
+            '2' => v = 0x2,
+            '3' => v = 0x3,
+            '4' => v = 0x4,
+            '5' => v = 0x5,
+            '6' => v = 0x6,
+            '7' => v = 0x7,
+            '8' => v = 0x8,
+            '9' => v = 0x9,
+            'a' => v = 0xa,
+            'b' => v = 0xb,
+            'c' => v = 0xc,
+            'd' => v = 0xd,
+            'e' => v = 0xe,
+            'f' => v = 0xf,
+            _ => panic!("Not hex: {}", c),
+        }
+        res += v * (16_usize.pow(i as u32)) ;
+    }
+    println!("{}", res);
+    res
 }
