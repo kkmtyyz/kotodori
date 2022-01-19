@@ -44,7 +44,7 @@ impl Dram {
 
         for i in begin..end {
             if i % 16 == 0 {
-                print!("{:04X} | ", i);
+                print!("{:016X} | ", i + MEM_OFF);
             }
 
             print!("{:02X}", self.get_mem(i));

@@ -776,9 +776,9 @@ impl Cpu {
                 self.print();
             } else if b.starts_with("m") {
                 let mut b = b.split_whitespace();
-                println!("{}, {}", b.nth(1).unwrap(), b.nth(2).unwrap());
-                let begin = hex_to_usize(b.nth(1).unwrap());
-                let end = hex_to_usize(b.nth(2).unwrap());
+                b.next(); // remove m
+                let begin = hex_to_usize(b.next().unwrap());
+                let end = hex_to_usize(b.next().unwrap());
                 self.bus.pdram_range(begin, end);
             }
         }
@@ -1899,8 +1899,7 @@ fn hex_to_usize(hex: &str) -> usize {
             'f' => v = 0xf,
             _ => panic!("Not hex: {}", c),
         }
-        res += v * (16_usize.pow(i as u32)) ;
+        res += v * (16_usize.pow(i as u32));
     }
-    println!("{}", res);
     res
 }
