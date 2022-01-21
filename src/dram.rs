@@ -14,8 +14,6 @@ impl Dram {
 
     #[inline(always)]
     fn set_mem(&mut self, idx: usize, data: u8) {
-        println!("idx: 0x{:016X}", idx);
-        println!("data: 0x{:016X}", data);
         if self.memory.len() < idx {
             panic!("access to invalid address");
         }
@@ -138,19 +136,21 @@ impl Dram {
         self.set_mem(addr as usize, (data >> 8) as u8);
     }
 
-    pub fn store_word(&mut self, mut addr: u64, data: u32) {
-        self.set_mem(addr as usize, (data & 0xF) as u8);
+    pub fn store_word(&mut self, mut addr: u64, mut data: u32) {
+        self.set_mem(addr as usize, (data & 0xFF) as u8);
         for _ in 0..3 {
             addr = addr + 1;
-            self.set_mem(addr as usize, ((data >> 8) & 0xF) as u8);
+            data >>= 8;
+            self.set_mem(addr as usize, (data & 0xFF) as u8);
         }
     }
 
-    pub fn store_dword(&mut self, mut addr: u64, data: u64) {
-        self.set_mem(addr as usize, (data & 0xF) as u8);
+    pub fn store_dword(&mut self, mut addr: u64, mut data: u64) {
+        self.set_mem(addr as usize, (data & 0xFF) as u8);
         for _ in 0..7 {
             addr = addr + 1;
-            self.set_mem(addr as usize, ((data >> 8) & 0xF) as u8);
+            data >>= 8;
+            self.set_mem(addr as usize, (data & 0xFF) as u8);
         }
     }
 }

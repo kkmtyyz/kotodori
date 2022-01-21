@@ -377,26 +377,44 @@ impl Cpu {
         println!("t5(0x01E):\t0x{:016X}, 0b{:064b}", self.t5, self.t5);
         println!("t6(0x01F):\t0x{:016X}, 0b{:064b}", self.t6, self.t6);
         println!("pc(0x020):\t0x{:016X}, 0b{:064b}", self.pc, self.pc);
-        println!("mstatus(0x300):\t0x{:016X}, 0b{:064b}", self.mstatus, self.mstatus);
+        println!(
+            "mstatus(0x300):\t0x{:016X}, 0b{:064b}",
+            self.mstatus, self.mstatus
+        );
         println!("mie(0x304):\t0x{:016X}, 0b{:064b}", self.mie, self.mie);
         println!("mip(0x344):\t0x{:016X}, 0b{:064b}", self.mip, self.mip);
         println!("mepc(0x341):\t0x{:016X}, 0b{:064b}", self.mepc, self.mepc);
-        println!("medeleg(0x302):\t0x{:016X}, 0b{:064b}", self.medeleg, self.medeleg);
-        println!("mideleg(0x303):\t0x{:016X}, 0b{:064b}", self.mideleg, self.mideleg);
-        println!("sstatus(0x100):\t0x{:016X}, 0b{:064b}", self.sstatus, self.sstatus);
+        println!(
+            "medeleg(0x302):\t0x{:016X}, 0b{:064b}",
+            self.medeleg, self.medeleg
+        );
+        println!(
+            "mideleg(0x303):\t0x{:016X}, 0b{:064b}",
+            self.mideleg, self.mideleg
+        );
+        println!(
+            "sstatus(0x100):\t0x{:016X}, 0b{:064b}",
+            self.sstatus, self.sstatus
+        );
         println!("sie(0x104):\t0x{:016X}, 0b{:064b}", self.sie, self.sie);
         println!("satp(0x180):\t0x{:016X}, 0b{:064b}", self.satp, self.satp);
         println!(
             "pmpaddr0(0x3B0):0x{:016X}, 0b{:064b}",
             self.pmpaddr0, self.pmpaddr0
         );
-        println!("pmpcfg0(0x3A0):\t0x{:016X}, 0b{:064b}", self.pmpcfg0, self.pmpcfg0);
+        println!(
+            "pmpcfg0(0x3A0):\t0x{:016X}, 0b{:064b}",
+            self.pmpcfg0, self.pmpcfg0
+        );
         println!("mtime:\t\t0x{:016X}, 0b{:064b}", self.mtime, self.mtime);
         println!(
             "mtimecmp:\t0x{:016X}, 0b{:064b}",
             self.mtimecmp, self.mtimecmp
         );
-        println!("mtvec(0x305):\t0x{:016X}, 0b{:064b}", self.mtvec, self.mtvec);
+        println!(
+            "mtvec(0x305):\t0x{:016X}, 0b{:064b}",
+            self.mtvec, self.mtvec
+        );
     }
 
     pub fn pdram_range(&self, begin: usize, end: usize) {
@@ -1629,8 +1647,6 @@ impl Cpu {
             self.s_mm(addr as u64, v);
         } else {
             let addr = (addr - MEM_OFF as i64) as u64;
-            println!("addr: 0x{:016X}", addr);
-            println!("v: 0x{:016X}", v);
             self.bus.sd_dram(addr as u64, v);
         }
     }
