@@ -344,59 +344,59 @@ impl Cpu {
     }
 
     pub fn print(&self) {
-        println!("zero:0x{:016X}, 0b{:064b}", self.zero, self.zero);
-        println!("ra:0x{:016X}, 0b{:064b}", self.ra, self.ra);
-        println!("sp:0x{:016X}, 0b{:064b}", self.sp, self.sp);
-        println!("gp:0x{:016X}, 0b{:064b}", self.gp, self.gp);
-        println!("tp:0x{:016X}, 0b{:064b}", self.tp, self.tp);
-        println!("t0:0x{:016X}, 0b{:064b}", self.t0, self.t0);
-        println!("t1:0x{:016X}, 0b{:064b}", self.t1, self.t1);
-        println!("t2:0x{:016X}, 0b{:064b}", self.t2, self.t2);
-        println!("fp:0x{:016X}, 0b{:064b}", self.fp, self.fp);
-        println!("s1:0x{:016X}, 0b{:064b}", self.s1, self.s1);
-        println!("a0:0x{:016X}, 0b{:064b}", self.a0, self.a0);
-        println!("a1:0x{:016X}, 0b{:064b}", self.a1, self.a1);
-        println!("a2:0x{:016X}, 0b{:064b}", self.a2, self.a2);
-        println!("a3:0x{:016X}, 0b{:064b}", self.a3, self.a3);
-        println!("a4:0x{:016X}, 0b{:064b}", self.a4, self.a4);
-        println!("a5:0x{:016X}, 0b{:064b}", self.a5, self.a5);
-        println!("a6:0x{:016X}, 0b{:064b}", self.a6, self.a6);
-        println!("a7:0x{:016X}, 0b{:064b}", self.a7, self.a7);
-        println!("s2:0x{:016X}, 0b{:064b}", self.s5, self.s5);
-        println!("s3:0x{:016X}, 0b{:064b}", self.s3, self.s3);
-        println!("s4:0x{:016X}, 0b{:064b}", self.s4, self.s4);
-        println!("s5:0x{:016X}, 0b{:064b}", self.s5, self.s5);
-        println!("s6:0x{:016X}, 0b{:064b}", self.s6, self.s6);
-        println!("s7:0x{:016X}, 0b{:064b}", self.s7, self.s7);
-        println!("s8:0x{:016X}, 0b{:064b}", self.s8, self.s8);
-        println!("s9:0x{:016X}, 0b{:064b}", self.s9, self.s9);
-        println!("s10:0x{:016X}, 0b{:064b}", self.s10, self.s10);
-        println!("s11:0x{:016X}, 0b{:064b}", self.s11, self.s11);
-        println!("t3:0x{:016X}, 0b{:064b}", self.t3, self.t3);
-        println!("t4:0x{:016X}, 0b{:064b}", self.t4, self.t4);
-        println!("t5:0x{:016X}, 0b{:064b}", self.t5, self.t5);
-        println!("t6:0x{:016X}, 0b{:064b}", self.t6, self.t6);
-        println!("pc:0x{:016X}, 0b{:064b}", self.pc, self.pc);
-        println!("mstatus:0x{:016X}, 0b{:064b}", self.mstatus, self.mstatus);
-        println!("mie:0x{:016X}, 0b{:064b}", self.mie, self.mie);
-        println!("mip:0x{:016X}, 0b{:064b}", self.mip, self.mip);
-        println!("mepc:0x{:016X}, 0b{:064b}", self.mepc, self.mepc);
-        println!("medeleg:0x{:016X}, 0b{:064b}", self.medeleg, self.medeleg);
-        println!("mideleg:0x{:016X}, 0b{:064b}", self.mideleg, self.mideleg);
-        println!("sstatus:0x{:016X}, 0b{:064b}", self.sstatus, self.sstatus);
-        println!("sie:0x{:016X}, 0b{:064b}", self.sie, self.sie);
-        println!("satp:0x{:016X}, 0b{:064b}", self.satp, self.satp);
+        println!("zero(0x000):\t0x{:016X}, 0b{:064b}", self.zero, self.zero);
+        println!("ra(0x001):\t0x{:016X}, 0b{:064b}", self.ra, self.ra);
+        println!("sp(0x002):\t0x{:016X}, 0b{:064b}", self.sp, self.sp);
+        println!("gp(0x003):\t0x{:016X}, 0b{:064b}", self.gp, self.gp);
+        println!("tp(0x004):\t0x{:016X}, 0b{:064b}", self.tp, self.tp);
+        println!("t0(0x005):\t0x{:016X}, 0b{:064b}", self.t0, self.t0);
+        println!("t1(0x006):\t0x{:016X}, 0b{:064b}", self.t1, self.t1);
+        println!("t2(0x007):\t0x{:016X}, 0b{:064b}", self.t2, self.t2);
+        println!("fp(0x008):\t0x{:016X}, 0b{:064b}", self.fp, self.fp);
+        println!("s1(0x009):\t0x{:016X}, 0b{:064b}", self.s1, self.s1);
+        println!("a0(0x00A):\t0x{:016X}, 0b{:064b}", self.a0, self.a0);
+        println!("a1(0x00B):\t0x{:016X}, 0b{:064b}", self.a1, self.a1);
+        println!("a2(0x00C):\t0x{:016X}, 0b{:064b}", self.a2, self.a2);
+        println!("a3(0x00D):\t0x{:016X}, 0b{:064b}", self.a3, self.a3);
+        println!("a4(0x00E):\t0x{:016X}, 0b{:064b}", self.a4, self.a4);
+        println!("a5(0x00F):\t0x{:016X}, 0b{:064b}", self.a5, self.a5);
+        println!("a6(0x010):\t0x{:016X}, 0b{:064b}", self.a6, self.a6);
+        println!("a7(0x011):\t0x{:016X}, 0b{:064b}", self.a7, self.a7);
+        println!("s2(0x012):\t0x{:016X}, 0b{:064b}", self.s5, self.s5);
+        println!("s3(0x013):\t0x{:016X}, 0b{:064b}", self.s3, self.s3);
+        println!("s4(0x014):\t0x{:016X}, 0b{:064b}", self.s4, self.s4);
+        println!("s5(0x015):\t0x{:016X}, 0b{:064b}", self.s5, self.s5);
+        println!("s6(0x016):\t0x{:016X}, 0b{:064b}", self.s6, self.s6);
+        println!("s7(0x017):\t0x{:016X}, 0b{:064b}", self.s7, self.s7);
+        println!("s8(0x018):\t0x{:016X}, 0b{:064b}", self.s8, self.s8);
+        println!("s9(0x019):\t0x{:016X}, 0b{:064b}", self.s9, self.s9);
+        println!("s10(0x01A):\t0x{:016X}, 0b{:064b}", self.s10, self.s10);
+        println!("s11(0x01B):\t0x{:016X}, 0b{:064b}", self.s11, self.s11);
+        println!("t3(0x01C):\t0x{:016X}, 0b{:064b}", self.t3, self.t3);
+        println!("t4(0x01D):\t0x{:016X}, 0b{:064b}", self.t4, self.t4);
+        println!("t5(0x01E):\t0x{:016X}, 0b{:064b}", self.t5, self.t5);
+        println!("t6(0x01F):\t0x{:016X}, 0b{:064b}", self.t6, self.t6);
+        println!("pc(0x020):\t0x{:016X}, 0b{:064b}", self.pc, self.pc);
+        println!("mstatus(0x300):\t0x{:016X}, 0b{:064b}", self.mstatus, self.mstatus);
+        println!("mie(0x304):\t0x{:016X}, 0b{:064b}", self.mie, self.mie);
+        println!("mip(0x344):\t0x{:016X}, 0b{:064b}", self.mip, self.mip);
+        println!("mepc(0x341):\t0x{:016X}, 0b{:064b}", self.mepc, self.mepc);
+        println!("medeleg(0x302):\t0x{:016X}, 0b{:064b}", self.medeleg, self.medeleg);
+        println!("mideleg(0x303):\t0x{:016X}, 0b{:064b}", self.mideleg, self.mideleg);
+        println!("sstatus(0x100):\t0x{:016X}, 0b{:064b}", self.sstatus, self.sstatus);
+        println!("sie(0x104):\t0x{:016X}, 0b{:064b}", self.sie, self.sie);
+        println!("satp(0x180):\t0x{:016X}, 0b{:064b}", self.satp, self.satp);
         println!(
-            "pmpaddr0:0x{:016X}, 0b{:064b}",
+            "pmpaddr0(0x3B0):0x{:016X}, 0b{:064b}",
             self.pmpaddr0, self.pmpaddr0
         );
-        println!("pmpcfg0:0x{:016X}, 0b{:064b}", self.pmpcfg0, self.pmpcfg0);
-        println!("mtime:0x{:016X}, 0b{:064b}", self.mtime, self.mtime);
+        println!("pmpcfg0(0x3A0):\t0x{:016X}, 0b{:064b}", self.pmpcfg0, self.pmpcfg0);
+        println!("mtime:\t\t0x{:016X}, 0b{:064b}", self.mtime, self.mtime);
         println!(
-            "mtimecmp:0x{:016X}, 0b{:064b}",
+            "mtimecmp:\t0x{:016X}, 0b{:064b}",
             self.mtimecmp, self.mtimecmp
         );
-        println!("mtvec:0x{:016X}, 0b{:064b}", self.mtvec, self.mtvec);
+        println!("mtvec(0x305):\t0x{:016X}, 0b{:064b}", self.mtvec, self.mtvec);
     }
 
     pub fn pdram_range(&self, begin: usize, end: usize) {
@@ -1629,6 +1629,8 @@ impl Cpu {
             self.s_mm(addr as u64, v);
         } else {
             let addr = (addr - MEM_OFF as i64) as u64;
+            println!("addr: 0x{:016X}", addr);
+            println!("v: 0x{:016X}", v);
             self.bus.sd_dram(addr as u64, v);
         }
     }

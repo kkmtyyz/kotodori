@@ -14,6 +14,8 @@ impl Dram {
 
     #[inline(always)]
     fn set_mem(&mut self, idx: usize, data: u8) {
+        println!("idx: 0x{:016X}", idx);
+        println!("data: 0x{:016X}", data);
         if self.memory.len() < idx {
             panic!("access to invalid address");
         }
