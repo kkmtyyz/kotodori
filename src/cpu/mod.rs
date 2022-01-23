@@ -11,10 +11,18 @@ const MTIME: u64 = 0x200_BFF8;
 const MTIMECMP: u64 = 0x200_4000;
 
 #[derive(Debug)]
+enum Mode {
+    M,
+    S,
+    U,
+}
+
+#[derive(Debug)]
 pub struct Cpu {
     bus: Bus,
     mem_reserved_w: Vec<u8>,
     time: DateTime<Local>,
+    mode: Mode, // privilege mode
 
     // memory mapped
     mtime: u64,
@@ -182,10 +190,11 @@ impl Cpu {
         Cpu {
             bus,
             mem_reserved_w: vec![0; mem_size / 32],
+            time: Local::now(),
+            mode: Mode::M,
 
             mtime: 0,
             mtimecmp: 0,
-            time: Local::now(),
 
             zero: 0,
             ra: 0,
@@ -803,6 +812,10 @@ impl Cpu {
     }
 
     fn fetch(&self) -> u32 {
+        if self.pmp_blocked_access(self.pc, true) {
+            panic!("Fetch blocked by PMP");
+        }
+
         let mut ltl_data = self.bus.lw_dram(self.pc - MEM_OFF as u64); // little endian data
         let mut data: u32 = 0;
         for _ in 0..4 {
@@ -851,6 +864,33 @@ impl Cpu {
         }
         self.sepc = self.pc;
         self.pc = self.stvec;
+    }
+
+    fn pmp_blocked_access(&self, addr: u64, is_fetch: bool) -> bool {
+        if let Mode::S | Mode::U = self.mode {
+            // do PMP
+            return self.is_pmp_blocked(addr);
+        }
+
+        let mprv = (self.mstatus & 0b10_0000_0000_0000_0000) >> 17;
+        if let Mode::S | Mode::U = self.mode {
+            if mprv == 0 && !is_fetch {
+                // do PMP
+                return self.is_pmp_blocked(addr);
+            }
+        }
+
+        let mpp = (self.mstatus & 0b1_1000_0000_0000) >> 11;
+        if mprv == 1 && (mpp == 0 || mpp == 1) {
+            // do PMP
+            return self.is_pmp_blocked(addr);
+        }
+
+        false
+    }
+
+    fn is_pmp_blocked(&self, addr: u64) -> bool {
+        false
     }
 
     fn exec_instruction(&mut self, inst: &Instruction) {
