@@ -17,6 +17,13 @@ enum Mode {
     U,
 }
 
+#[derive(Debug, PartialEq)]
+enum PMPPerm {
+    R,
+    W,
+    X,
+}
+
 #[derive(Debug)]
 pub struct Cpu {
     bus: Bus,
@@ -812,7 +819,7 @@ impl Cpu {
     }
 
     fn fetch(&self) -> u32 {
-        if self.pmp_blocked_access(self.pc, true) {
+        if self.check_pmp(self.pc, PMPPerm::X) {
             panic!("Fetch blocked by PMP");
         }
 
@@ -866,30 +873,88 @@ impl Cpu {
         self.pc = self.stvec;
     }
 
-    fn pmp_blocked_access(&self, addr: u64, is_fetch: bool) -> bool {
+    fn check_pmp(&self, addr: u64, perm: PMPPerm) -> bool {
         if let Mode::S | Mode::U = self.mode {
             // do PMP
-            return self.is_pmp_blocked(addr);
+            return self.blocked_by_pmp(addr, perm);
         }
 
         let mprv = (self.mstatus & 0b10_0000_0000_0000_0000) >> 17;
         if let Mode::S | Mode::U = self.mode {
-            if mprv == 0 && !is_fetch {
+            if mprv == 0 && perm != PMPPerm::X {
                 // do PMP
-                return self.is_pmp_blocked(addr);
+                return self.blocked_by_pmp(addr, perm);
             }
         }
 
         let mpp = (self.mstatus & 0b1_1000_0000_0000) >> 11;
         if mprv == 1 && (mpp == 0 || mpp == 1) {
             // do PMP
-            return self.is_pmp_blocked(addr);
+            return self.blocked_by_pmp(addr, perm);
         }
 
         false
     }
 
-    fn is_pmp_blocked(&self, addr: u64) -> bool {
+    fn blocked_by_pmp(&self, addr: u64, perm: PMPPerm) -> bool {
+        let pmpcfg_base = 0x3A0;
+        let pmpaddr_base = 0x3B0;
+
+        for i in 0..64 {
+            let pmpcfg = self.get_csr(pmpcfg_base + (i / 8 * 2));
+            let pmpcfg = pmpcfg >> ((i % 8) * 8);
+
+            let a = (pmpcfg & 0b1_1000) >> 3;
+
+            // OFF
+            if a == 0 {
+                continue;
+            }
+
+            // TOR
+            if a == 1 {
+                let begin: u64;
+                if i == 0 {
+                    begin = 0;
+                } else {
+                    begin = self.get_csr(pmpaddr_base + i - 1);
+                }
+                let end = self.get_csr(pmpaddr_base + i);
+
+                if addr < begin && end <= addr {
+                    continue;
+                }
+
+                match perm {
+                    PMPPerm::R => {
+                        if pmpcfg & 1 == 1 {
+                            return true;
+                        }
+                    }
+                    PMPPerm::W => {
+                        if pmpcfg & 2 == 0x10 {
+                            return true;
+                        }
+                    }
+                    PMPPerm::X => {
+                        if pmpcfg & 4 == 0x100 {
+                            return true;
+                        }
+                    }
+                }
+                return false;
+            }
+
+            // NA4
+            if a == 2 {
+                panic!("PMP NA4 is not implemented");
+            }
+
+            // NAPOT
+            if a == 3 {
+                panic!("PMP NAPOT is not implemented");
+            }
+        }
         false
     }
 
