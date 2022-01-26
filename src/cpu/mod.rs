@@ -797,7 +797,7 @@ impl Cpu {
             let pre_pc = self.pc;
             self.exec_instruction(&inst);
             self.timer_int();
-            self.s_int();
+            self.int();
 
             if pre_pc == self.pc {
                 self.pc += 4;
@@ -857,6 +857,24 @@ impl Cpu {
 
         self.mip &= !0b1000_000;
         self.time = Local::now();
+    }
+
+    fn int(&mut self) {
+        self.mideleg;
+        self.m_int();
+        self.s_int();
+    }
+
+    fn m_int(&mut self) {
+        let mstatus_sie = (self.mstatus & 0b10) >> 1;
+        if mstatus_sie == 0 {
+            return;
+        }
+        if (self.mip & self.mie) == 0 {
+            return;
+        }
+        self.mepc = self.pc;
+        self.pc = self.mtvec;
     }
 
     fn s_int(&mut self) {
@@ -1471,7 +1489,7 @@ impl Cpu {
 
     /// ExceptionReturn(User)
     fn sret(&mut self, inst: &Instruction) {
-        let spp = self.sstatus & 0b1_1000_0000_0000;
+        let pre_spp = (self.sstatus & 0b1_1000_0000_0000) >> 11;
         let spie = self.sstatus & 0b100_0000;
         let sie = spie >> 3;
         self.sstatus |= sie;
@@ -1482,11 +1500,18 @@ impl Cpu {
         let sprv: u64 = 0b10_0000_0000_0000_0000;
         self.sstatus &= !sprv; // mprv = 0;
         self.pc = self.sepc;
+
+        match pre_spp {
+            0 => self.mode = Mode::U,
+            1 => self.mode = Mode::S,
+            3 => self.mode = Mode::M,
+            _ => (),
+        }
     }
 
     /// ExceptionReturn(Machine)
     fn mret(&mut self, inst: &Instruction) {
-        let mpp = self.mstatus & 0b1_1000_0000_0000;
+        let pre_mpp = (self.mstatus & 0b1_1000_0000_0000) >> 11;
         let mpie = self.mstatus & 0b100_0000;
         let mie = mpie >> 3;
         self.mstatus |= mie;
@@ -1497,6 +1522,13 @@ impl Cpu {
         let mprv: u64 = 0b10_0000_0000_0000_0000;
         self.mstatus &= !mprv; // mprv = 0;
         self.pc = self.mepc;
+
+        match pre_mpp {
+            0 => self.mode = Mode::U,
+            1 => self.mode = Mode::S,
+            3 => self.mode = Mode::M,
+            _ => (),
+        }
     }
 
     /// while (noInterruptsPending) idle
