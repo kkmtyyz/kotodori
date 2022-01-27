@@ -864,7 +864,7 @@ impl Cpu {
         let e_code = self.mcause & 0x7FFF_FFFF_FFFF_FFFF;
 
         if int == 1 {
-            if self.mideleg & e_code == 1 {
+            if self.mideleg & e_code == e_code {
                 self.s_int();
             } else {
                 self.m_int();
@@ -872,7 +872,7 @@ impl Cpu {
             return;
         }
 
-        if self.medeleg & e_code == 1 {
+        if self.medeleg & e_code == e_code {
             self.s_exception();
         } else {
             self.m_exception();
