@@ -860,12 +860,27 @@ impl Cpu {
     }
 
     fn int(&mut self) {
-        self.mideleg;
-        self.m_int();
-        self.s_int();
+        let int = self.mcause >> 63;
+        let e_code = self.mcause & 0x7FFF_FFFF_FFFF_FFFF;
+
+        if int == 1 {
+            if self.mideleg & e_code == 1 {
+                self.s_int();
+            } else {
+                self.m_int();
+            }
+            return;
+        }
+
+        if self.medeleg & e_code == 1 {
+            self.s_exception();
+        } else {
+            self.m_exception();
+        }
     }
 
     fn m_int(&mut self) {
+        self.mode = Mode::M;
         let mstatus_sie = (self.mstatus & 0b10) >> 1;
         if mstatus_sie == 0 {
             return;
@@ -878,6 +893,7 @@ impl Cpu {
     }
 
     fn s_int(&mut self) {
+        self.mode = Mode::S;
         let sstatus_sie = (self.sstatus & 0b10) >> 1;
         if sstatus_sie == 0 {
             return;
@@ -887,6 +903,14 @@ impl Cpu {
         }
         self.sepc = self.pc;
         self.pc = self.stvec;
+    }
+
+    fn m_exception(&mut self) {
+        self.mode = Mode::M;
+    }
+
+    fn s_exception(&mut self) {
+        self.mode = Mode::S;
     }
 
     fn check_pmp(&self, addr: u64, perm: PMPPerm) {
