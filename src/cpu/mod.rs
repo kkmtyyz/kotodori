@@ -1,6 +1,6 @@
 pub mod instructions;
+mod int;
 pub mod register;
-mod trap;
 use crate::conf::MEM_OFF;
 use chrono::{DateTime, Local};
 
@@ -101,8 +101,8 @@ impl Cpu {
 
             let pre_pc = self.reg.pc;
             self.exec_instruction(&inst);
-            trap::timer_int(&mut self.reg, &mut self.time, self.mtimecmp);
-            trap::int(&mut self.reg, &mut self.mode);
+            int::timer_int(&mut self.reg, &mut self.time, self.mtimecmp);
+            int::int(&mut self.reg, &mut self.mode);
 
             if pre_pc == self.reg.pc {
                 self.reg.pc += 4;
