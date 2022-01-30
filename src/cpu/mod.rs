@@ -125,15 +125,7 @@ impl Cpu {
 
     fn fetch(&self) -> u32 {
         self.check_pmp(self.reg.pc, PMPPerm::X);
-
-        let mut ltl_data = self.bus.lw_dram(self.reg.pc - MEM_OFF as u64); // little endian data
-        let mut data: u32 = 0;
-        for _ in 0..4 {
-            data <<= 8;
-            data |= ltl_data & 0xFF;
-            ltl_data >>= 8;
-        }
-        data
+        self.bus.lw_dram(self.reg.pc - MEM_OFF as u64)
     }
 
     fn check_pmp(&self, addr: u64, perm: PMPPerm) {

@@ -101,27 +101,30 @@ impl Dram {
 
     pub fn load_hword(&self, begin: u64) -> u16 {
         let mut res: u16 = 0;
-        for i in begin..begin + 2 {
-            res <<= 8;
-            res |= self.get_mem(i as usize) as u16;
+        for (i, addr) in (begin..begin + 2).enumerate() {
+            let mut data = self.get_mem(addr as usize) as u16;
+            data <<= (i * 8) as u16;
+            res |= data;
         }
         res
     }
 
     pub fn load_word(&self, addr: u64) -> u32 {
         let mut res: u32 = 0;
-        for i in addr..addr + 4 {
-            res <<= 8;
-            res |= self.get_mem(i as usize) as u32;
+        for (i, addr) in (addr..addr + 4).enumerate() {
+            let mut data = self.get_mem(addr as usize) as u32;
+            data <<= (i * 8) as u32;
+            res |= data;
         }
         res
     }
 
     pub fn load_dword(&self, addr: u64) -> u64 {
         let mut res: u64 = 0;
-        for i in addr..addr + 8 {
-            res <<= 8;
-            res |= self.get_mem(i as usize) as u64;
+        for (i, addr) in (addr..addr + 8).enumerate() {
+            let mut data = self.get_mem(addr as usize) as u64;
+            data <<= (i * 8) as u64;
+            res |= data;
         }
         res
     }

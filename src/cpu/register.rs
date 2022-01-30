@@ -366,11 +366,16 @@ impl Register {
             self.mideleg, self.mideleg
         );
         println!(
+            "mscratch(0x340):0x{:016X}, 0b{:064b}",
+            self.mscratch, self.mscratch
+        );
+        println!(
             "sstatus(0x100):\t0x{:016X}, 0b{:064b}",
             self.sstatus, self.sstatus
         );
         println!("sie(0x104):\t0x{:016X}, 0b{:064b}", self.sie, self.sie);
         println!("satp(0x180):\t0x{:016X}, 0b{:064b}", self.satp, self.satp);
+
         println!(
             "pmpaddr0(0x3B0):0x{:016X}, 0b{:064b}",
             self.pmpaddr0, self.pmpaddr0
