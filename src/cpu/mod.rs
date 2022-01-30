@@ -13,7 +13,7 @@ use register::Register;
 const MTIME: u64 = 0x200_BFF8;
 const MTIMECMP: u64 = 0x200_4000;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Mode {
     M,
     S,
@@ -101,7 +101,7 @@ impl Cpu {
 
             let pre_pc = self.reg.pc;
             self.exec_instruction(&inst);
-            int::timer_int(&mut self.reg, &mut self.time, self.mtimecmp);
+            int::timer_int(&mut self.reg, &mut self.mode, &mut self.time, self.mtimecmp);
             int::int(&mut self.reg, &mut self.mode);
 
             if pre_pc == self.reg.pc {
