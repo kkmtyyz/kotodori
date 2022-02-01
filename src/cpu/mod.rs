@@ -1,11 +1,9 @@
 pub mod instructions;
 mod int;
 pub mod register;
-use crate::conf::MEM_OFF;
-use chrono::{DateTime, Local};
-
 use crate::bus::Bus;
 use crate::conf;
+use crate::conf::MEM_OFF;
 use instructions::InstName;
 use instructions::Instruction;
 use register::Register;
@@ -31,7 +29,6 @@ enum PMPPerm {
 pub struct Cpu {
     bus: Bus,
     mem_reserved_w: Vec<u8>,
-    time: DateTime<Local>,
     mode: Mode, // privilege mode
 
     // memory mapped
@@ -46,7 +43,6 @@ impl Cpu {
         Cpu {
             bus,
             mem_reserved_w: vec![0; mem_size / 32],
-            time: Local::now(),
             mode: Mode::M,
 
             mtime: 0,
@@ -101,7 +97,10 @@ impl Cpu {
 
             let pre_pc = self.reg.pc;
             self.exec_instruction(&inst);
-            int::timer_int(&mut self.reg, &mut self.mode, &mut self.time, self.mtimecmp);
+
+            self.mtime += 2500;
+
+            int::timer_int(&mut self.reg, &mut self.mode, self.mtime, self.mtimecmp);
             int::int(&mut self.reg, &mut self.mode);
 
             if pre_pc == self.reg.pc {

@@ -1,6 +1,5 @@
 use super::register::Register;
 use super::Mode;
-use chrono::{DateTime, Duration, Local};
 
 const MSTATUS_MIE: u64 = 0b1000;
 const SSTATUS_SIE: u64 = 0b0010;
@@ -12,28 +11,18 @@ const MIP_MTIP: u64 = 0b0000_1000_0000; // Machine timer interrupt
 const MIP_SEIP: u64 = 0b0010_0000_0000; // Supervisor external interrupt
 const MIP_MEIP: u64 = 0b1000_0000_0000; // Machine external interrupt
 
-pub fn timer_int(
-    reg: &mut Register,
-    current_mode: &mut Mode,
-    time: &mut DateTime<Local>,
-    mtimecmp: u64,
-) {
+pub fn timer_int(reg: &mut Register, current_mode: &mut Mode, mtime: u64, mtimecmp: u64) {
     if (*current_mode == Mode::M) && (reg.mstatus & MSTATUS_MIE == 0) {
         return;
     }
 
-    let duration: Duration = Local::now() - *time;
-    if let Some(nano) = duration.num_nanoseconds() {
-        if nano <= (mtimecmp as i64 * 100) {
-            return;
-        }
+    if mtime < mtimecmp {
+        return;
     }
 
     reg.mip |= MIP_MTIP;
     reg.mcause = 0x8000_0000_0000_0007; // timer interrupt
     int(reg, current_mode);
-
-    *time = Local::now();
 }
 
 pub fn int(reg: &mut Register, current_mode: &mut Mode) {
