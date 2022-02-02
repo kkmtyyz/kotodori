@@ -375,10 +375,11 @@ fn to_ri(inst: u32, fmt: &InstFmt) -> (u8, u8, u8, u32) {
             imm = inst >> 31 & 0b1;
             imm <<= 1;
             imm |= inst >> 7 & 0b1;
-            imm <<= 4;
-            imm |= inst >> 8 & 0b1111;
             imm <<= 6;
             imm |= inst >> 25 & 0b11_1111;
+            imm <<= 4;
+            imm |= inst >> 8 & 0b1111;
+            imm <<= 1;
         }
         InstFmt::U => {
             rd = (inst >> 7 & 0b1_1111) as u8;

@@ -360,7 +360,8 @@ impl Cpu {
     /// if (rs1 == rs2) pc += sext(offset)
     fn beq(&mut self, inst: &Instruction) {
         if self.reg.get_reg(inst.rs1) == self.reg.get_reg(inst.rs2) {
-            self.reg.pc = (self.reg.pc as i64 + inst.imm as i64) as u64;
+            let imm = b12_to_sign64(inst.imm);
+            self.reg.pc = (self.reg.pc as i64 + imm) as u64;
         }
     }
 
