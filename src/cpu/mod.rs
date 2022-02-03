@@ -328,7 +328,7 @@ impl Cpu {
 
     /// x[rd] = sext(immediate[31:12] << 12)
     fn lui(&mut self, inst: &Instruction) {
-        let v = (inst.imm << 12) as i64;
+        let v = (inst.imm << 12) as i32 as i64;
         self.reg.set_reg(inst.rd, v as u64);
     }
 
