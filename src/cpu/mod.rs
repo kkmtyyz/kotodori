@@ -334,7 +334,7 @@ impl Cpu {
 
     /// x[rd] = pc + sext(immediate[31:12] << 12)
     fn auipc(&mut self, inst: &Instruction) {
-        let v = self.reg.pc as i64 + (inst.imm << 12) as i64;
+        let v = self.reg.pc as i64 + (inst.imm << 12) as i32 as i64;
         self.reg.set_reg(inst.rd, v as u64);
     }
 
