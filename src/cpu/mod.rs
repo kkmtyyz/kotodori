@@ -118,6 +118,8 @@ impl Cpu {
                 let begin = hex_to_usize(b.next().unwrap());
                 let end = hex_to_usize(b.next().unwrap());
                 self.bus.pdram_range(begin, end);
+            } else if b.trim() == "uart".to_string() {
+                self.bus.puart();
             }
         }
     }

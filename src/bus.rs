@@ -1,4 +1,5 @@
 use crate::dram::Dram;
+use crate::uart;
 use crate::uart::Uart;
 
 #[derive(Debug)]
@@ -24,6 +25,10 @@ impl Bus {
 
     pub fn pdram_range(&self, begin: usize, end: usize) {
         self.dram.prange(begin, end);
+    }
+
+    pub fn puart(&self) {
+        self.uart.print();
     }
 
     pub fn lb_dram(&self, addr: u64) -> u8 {
@@ -60,18 +65,14 @@ impl Bus {
 
     pub fn l_mm(&self, addr: u64) -> u64 {
         match addr {
-            Uart::RHR => self.uart.rhr as u64,
-            Uart::ISR => self.uart.isr as u64,
-            Uart::LSR => self.uart.lsr as u64,
-            Uart::MSR => self.uart.msr as u64,
-            Uart::SPR => self.uart.spr as u64,
+            uart::UART..=uart::UART_END => self.uart.read(addr),
             _ => panic!("invalid memory mapped address"),
         }
     }
 
     pub fn s_mm(&mut self, addr: u64, data: u64) {
         match addr {
-            Uart::UART..=Uart::UART_END => self.uart.write(addr, data),
+            uart::UART..=uart::UART_END => self.uart.write(addr, data),
             _ => panic!("invalid memory mapped address: 0x{:016X}", addr),
         }
     }
