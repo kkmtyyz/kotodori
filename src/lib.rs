@@ -4,3 +4,4 @@ mod conf;
 mod cpu;
 mod dram;
 pub mod emulator;
+mod uart;

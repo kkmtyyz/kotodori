@@ -7,6 +7,7 @@ use crate::cmd::Command;
 use crate::conf::MEM_OFF;
 use crate::cpu::Cpu;
 use crate::dram::Dram;
+use crate::uart::Uart;
 
 pub struct Emulator {
     cpu: Cpu,
@@ -24,7 +25,7 @@ impl Emulator {
             entry_point = Emulator::load_elf_to_dram(&mut dram, elf);
         }
 
-        let bus = Bus::new(dram);
+        let bus = Bus::new(dram, Uart::new());
 
         Emulator {
             cpu: Cpu::new(bus, cmd.mem_size.unwrap()),

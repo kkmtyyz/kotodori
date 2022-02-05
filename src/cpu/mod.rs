@@ -70,7 +70,7 @@ impl Cpu {
         match addr {
             MTIME => self.mtime,
             MTIMECMP => self.mtimecmp,
-            _ => panic!("invalid memory mapped address"),
+            _ => self.bus.l_mm(addr),
         }
     }
 
@@ -78,7 +78,7 @@ impl Cpu {
         match addr {
             MTIME => self.mtime = data,
             MTIMECMP => self.mtimecmp = data,
-            _ => panic!("invalid memory mapped address: 0x{:016X}", addr),
+            _ => self.bus.s_mm(addr, data),
         }
     }
 

@@ -1,4 +1,5 @@
 use crate::dram::Dram;
+use crate::uart::Uart;
 
 #[derive(Debug)]
 #[allow(dead_code)]
@@ -7,15 +8,17 @@ pub struct Bus {
     data: u32,
     control: u32,
     dram: Dram,
+    uart: Uart,
 }
 
 impl Bus {
-    pub fn new(dram: Dram) -> Bus {
+    pub fn new(dram: Dram, uart: Uart) -> Bus {
         Bus {
             address: 0,
             data: 0,
             control: 0,
             dram,
+            uart,
         }
     }
 
@@ -53,5 +56,23 @@ impl Bus {
 
     pub fn sd_dram(&mut self, addr: u64, data: u64) {
         self.dram.store_dword(addr, data);
+    }
+
+    pub fn l_mm(&self, addr: u64) -> u64 {
+        match addr {
+            Uart::RHR => self.uart.rhr as u64,
+            Uart::ISR => self.uart.isr as u64,
+            Uart::LSR => self.uart.lsr as u64,
+            Uart::MSR => self.uart.msr as u64,
+            Uart::SPR => self.uart.spr as u64,
+            _ => panic!("invalid memory mapped address"),
+        }
+    }
+
+    pub fn s_mm(&mut self, addr: u64, data: u64) {
+        match addr {
+            Uart::UART..=Uart::UART_END => self.uart.write(addr, data),
+            _ => panic!("invalid memory mapped address: 0x{:016X}", addr),
+        }
     }
 }
