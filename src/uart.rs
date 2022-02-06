@@ -43,8 +43,7 @@ const LSR_0FE: u8 = 0b1000_0000; // 0/FIFO error
 
 #[derive(Debug)]
 pub struct Uart {
-    pub thr: u8, // Transmit Holding Buffer
-    pub rbr: u8, // Receive Buffer
+    pub thr_rbr: u8, // Transmit Holding Buffer / Receive Buffer
     pub dll: u8, // Divisor Latch Low Byte
     pub ier: u8, // Interrupt Enable Register
     pub dlh: u8, // Divisor Latch High Byte
@@ -60,24 +59,22 @@ pub struct Uart {
 impl Uart {
     pub fn new() -> Uart {
         Uart {
-            thr: 0,
-            rbr: 0,
+            thr_rbr: 0,
             dll: 0,
             ier: 0,
             dlh: 0,
-            iir: 0,
+            iir: 1,
             fcr: 0,
             lcr: 0,
             mcr: 0,
-            lsr: 0,
+            lsr: 0x60,
             msr: 0,
             sr: 0,
         }
     }
 
     pub fn print(&self) {
-        println!("thr: {:08b}", self.thr);
-        println!("rbr: {:08b}", self.rbr);
+        println!("thr_rbr: {:08b}", self.thr_rbr);
         println!("dll: {:08b}", self.dll);
         println!("ier: {:08b}", self.ier);
         println!("dlh: {:08b}", self.dlh);
@@ -91,13 +88,41 @@ impl Uart {
     }
 
     pub fn read(&self, addr: u64) -> u64 {
-        0
+        match addr {
+            RBR => self.r_thr_rbr(),
+            IER => self.r_ier_dlh(),
+            IIR => self.iir as u64,
+            LCR => self.lcr as u64,
+            MCR => self.mcr as u64,
+            LSR => self.lsr as u64,
+            MSR => self.msr as u64,
+            SR => self.sr as u64,
+            _ => panic!("invalid read to uart register"),
+        }
+    }
+
+    fn r_thr_rbr(&self) -> u64 {
+        // Divisor Latch Access Bit is true
+        if self.lcr & LCR_DLE == 1 {
+            return self.dll as u64;
+        }
+
+        return self.thr_rbr as u64;
+    }
+
+    fn r_ier_dlh(&self) -> u64 {
+        // Divisor Latch Access Bit is true
+        if self.lcr & LCR_DLE == 1 {
+            return self.dll as u64;
+        }
+
+        return self.ier as u64;
     }
 
     pub fn write(&mut self, addr: u64, data: u64) {
         match addr {
-            THR => self.w_thr(data),
-            IER => self.ier = data as u8,
+            THR => self.w_thr_rbr(data),
+            IER => self.w_ier_dlh(data),
             FCR => self.fcr = data as u8,
             LCR => self.lcr = data as u8,
             MCR => self.mcr = data as u8,
@@ -106,14 +131,28 @@ impl Uart {
         }
     }
 
-    fn w_thr(&mut self, data: u64) {
-        if self.lcr & LCR_DLE == 1 {}
+    fn w_thr_rbr(&mut self, data: u64) {
+        // Divisor Latch Access Bit is true
+        if self.lcr & LCR_DLE == 1 {
+            self.dll = data as u8;
+            return;
+        }
 
         if self.lsr & LSR_THE == 0 {
             panic!("UART.THR is full");
         }
         self.lsr |= !LSR_THE;
-        self.thr = data as u8;
+        self.thr_rbr = data as u8;
         self.lsr |= LSR_THE;
+    }
+
+    fn w_ier_dlh(&mut self, data: u64) {
+        // Divisor Latch Access Bit is true
+        if self.lcr & LCR_DLE == 1 {
+            self.dlh = data as u8;
+            return;
+        }
+
+        self.ier = data as u8;
     }
 }
