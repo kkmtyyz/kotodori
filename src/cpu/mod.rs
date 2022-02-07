@@ -184,17 +184,17 @@ impl Cpu {
 
                 match perm {
                     PMPPerm::R => {
-                        if pmpcfg & 1 == 1 {
+                        if pmpcfg & 1 == 0b001 {
                             return;
                         }
                     }
                     PMPPerm::W => {
-                        if pmpcfg & 2 == 0x10 {
+                        if pmpcfg & 2 == 0b010 {
                             return;
                         }
                     }
                     PMPPerm::X => {
-                        if pmpcfg & 4 == 0x100 {
+                        if pmpcfg & 4 == 0b100 {
                             return;
                         }
                     }
