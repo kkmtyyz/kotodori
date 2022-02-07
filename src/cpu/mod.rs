@@ -370,14 +370,16 @@ impl Cpu {
     /// if (rs1 != rs2) pc += sext(offset)
     fn bne(&mut self, inst: &Instruction) {
         if self.reg.get_reg(inst.rs1) != self.reg.get_reg(inst.rs2) {
-            self.reg.pc = (self.reg.pc as i64 + inst.imm as i64) as u64;
+            let imm = b12_to_sign64(inst.imm);
+            self.reg.pc = (self.reg.pc as i64 + imm) as u64;
         }
     }
 
     /// if (rs1 <s rs2) pc += sext(offset)
     fn blt(&mut self, inst: &Instruction) {
         if (self.reg.get_reg(inst.rs1) as i64) < (self.reg.get_reg(inst.rs2) as i64) {
-            self.reg.pc = (self.reg.pc as i64 + inst.imm as i64) as u64;
+            let imm = b12_to_sign64(inst.imm);
+            self.reg.pc = (self.reg.pc as i64 + imm) as u64;
         }
     }
 

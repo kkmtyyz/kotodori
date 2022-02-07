@@ -44,16 +44,16 @@ const LSR_0FE: u8 = 0b1000_0000; // 0/FIFO error
 #[derive(Debug)]
 pub struct Uart {
     pub thr_rbr: u8, // Transmit Holding Buffer / Receive Buffer
-    pub dll: u8, // Divisor Latch Low Byte
-    pub ier: u8, // Interrupt Enable Register
-    pub dlh: u8, // Divisor Latch High Byte
-    pub iir: u8, // Interrupt Identification Register
-    pub fcr: u8, // FIFO control Register
-    pub lcr: u8, // Line Control Register
-    pub mcr: u8, // Modem Control Register
-    pub lsr: u8, // Line Status Register
-    pub msr: u8, // Modem Status Register
-    pub sr: u8,  // Scratch Register
+    pub dll: u8,     // Divisor Latch Low Byte
+    pub ier: u8,     // Interrupt Enable Register
+    pub dlh: u8,     // Divisor Latch High Byte
+    pub iir: u8,     // Interrupt Identification Register
+    pub fcr: u8,     // FIFO control Register
+    pub lcr: u8,     // Line Control Register
+    pub mcr: u8,     // Modem Control Register
+    pub lsr: u8,     // Line Status Register
+    pub msr: u8,     // Modem Status Register
+    pub sr: u8,      // Scratch Register
 }
 
 impl Uart {
