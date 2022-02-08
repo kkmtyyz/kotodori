@@ -28,7 +28,7 @@ impl Emulator {
         let bus = Bus::new(dram, Uart::new());
 
         Emulator {
-            cpu: Cpu::new(bus, cmd.mem_size.unwrap()),
+            cpu: Cpu::new(bus, cmd.mem_size.unwrap(), cmd.dbg.clone()),
             entry_point,
         }
     }

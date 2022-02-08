@@ -4,9 +4,12 @@ pub mod register;
 use crate::bus::Bus;
 use crate::conf;
 use crate::conf::MEM_OFF;
+use crate::dbg::Debug;
+use crate::util;
 use instructions::InstName;
 use instructions::Instruction;
 use register::Register;
+use std::io::{stdout, Write};
 
 const MTIME: u64 = 0x200_BFF8;
 const MTIMECMP: u64 = 0x200_4000;
@@ -27,6 +30,9 @@ enum PMPPerm {
 
 #[derive(Debug)]
 pub struct Cpu {
+    dbg: Debug,
+    dbg_step: bool,
+
     bus: Bus,
     mem_reserved_w: Vec<u8>,
     mode: Mode, // privilege mode
@@ -39,8 +45,13 @@ pub struct Cpu {
 }
 
 impl Cpu {
-    pub fn new(bus: Bus, mem_size: usize) -> Cpu {
+    pub fn new(bus: Bus, mem_size: usize, dbg: Debug) -> Cpu {
+        let dbg_step = if dbg.bp == 0 { true } else { false };
+
         Cpu {
+            dbg,
+            dbg_step: dbg_step,
+
             bus,
             mem_reserved_w: vec![0; mem_size / 32],
             mode: Mode::M,
@@ -107,21 +118,38 @@ impl Cpu {
                 self.reg.pc += 4;
             }
 
-            // println!("pc: 0x{:016X}", self.reg.pc);
+            if self.dbg.enable {
+                if self.dbg_step {
+                    self.debug();
+                } else if self.dbg.is_bp(self.reg.pc) {
+                    self.debug();
+                    self.dbg_step = true;
+                }
+            }
+        }
+    }
+
+    fn debug(&self) {
+        loop {
+            print!(">> ");
+            stdout().flush().unwrap();
             let mut b = String::new();
             std::io::stdin().read_line(&mut b).ok();
-            if b.trim() == "p".to_string() {
+            if b.trim() == "".to_string() {
+                break;
+            } else if b.trim() == "p".to_string() {
                 self.print();
             } else if b.starts_with("m") {
                 let mut b = b.split_whitespace();
                 b.next(); // remove m
-                let begin = hex_to_usize(b.next().unwrap());
-                let end = hex_to_usize(b.next().unwrap());
+                let begin = util::hex_to_usize(b.next().unwrap());
+                let end = util::hex_to_usize(b.next().unwrap());
                 self.bus.pdram_range(begin, end);
             } else if b.trim() == "uart".to_string() {
                 self.bus.puart();
             }
         }
+        println!();
     }
 
     fn fetch(&self) -> u32 {
@@ -1332,39 +1360,4 @@ fn b20_to_sign64(imm: u32) -> i64 {
         return (imm as u64 | 0xFFFF_FFFF_FFE0_0000) as i64;
     }
     imm as i64
-}
-
-/// Argument:
-///   hex: 0x0123ABCD
-fn hex_to_usize(hex: &str) -> usize {
-    let mut chars = hex.chars();
-    chars.next(); // remove 0
-    chars.next(); // remove x
-
-    let chars = chars.rev();
-    let mut res: usize = 0;
-    for (i, c) in chars.enumerate() {
-        let v: usize;
-        match c.to_ascii_lowercase() {
-            '0' => v = 0x0,
-            '1' => v = 0x1,
-            '2' => v = 0x2,
-            '3' => v = 0x3,
-            '4' => v = 0x4,
-            '5' => v = 0x5,
-            '6' => v = 0x6,
-            '7' => v = 0x7,
-            '8' => v = 0x8,
-            '9' => v = 0x9,
-            'a' => v = 0xa,
-            'b' => v = 0xb,
-            'c' => v = 0xc,
-            'd' => v = 0xd,
-            'e' => v = 0xe,
-            'f' => v = 0xf,
-            _ => panic!("Not hex: {}", c),
-        }
-        res += v * (16_usize.pow(i as u32));
-    }
-    res
 }
