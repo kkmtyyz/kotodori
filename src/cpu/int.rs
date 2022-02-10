@@ -15,18 +15,33 @@ pub fn timer_int(reg: &mut Register, current_mode: &mut Mode, mtime: u64, mtimec
     if (*current_mode == Mode::M) && (reg.mstatus & MSTATUS_MIE == 0) {
         return;
     }
+    if (*current_mode == Mode::S) && (reg.sstatus & SSTATUS_SIE == 0) {
+        return;
+    }
 
     if mtime < mtimecmp {
         return;
     }
 
-    reg.mip |= MIP_MTIP;
-    reg.mcause = 0x8000_0000_0000_0007; // timer interrupt
+    match current_mode {
+        Mode::S => {
+            reg.sip |= MIP_STIP;
+            reg.scause = 0x8000_0000_0000_0007; // timer interrupt
+        }
+        _ => {
+            // mode U or M
+            reg.mip |= MIP_MTIP;
+            reg.mcause = 0x8000_0000_0000_0007; // timer interrupt
+        }
+    }
     int(reg, current_mode);
 }
 
 pub fn int(reg: &mut Register, current_mode: &mut Mode) {
     if (*current_mode == Mode::M) && (reg.mstatus & MSTATUS_MIE == 0) {
+        return;
+    }
+    if (*current_mode == Mode::S) && (reg.sstatus & SSTATUS_SIE == 0) {
         return;
     }
 
@@ -43,7 +58,7 @@ pub fn int(reg: &mut Register, current_mode: &mut Mode) {
 
     match int_mode {
         Mode::M => {
-            if reg.mideleg & int_code != 0 {
+            if reg.mideleg & int_code == 0 {
                 m_int(reg, current_mode, int_code);
             } else {
                 s_int(reg, current_mode, int_code);

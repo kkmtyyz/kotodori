@@ -388,6 +388,25 @@ impl Register {
             "mtvec(0x305):\t0x{:016X}, 0b{:064b}",
             self.mtvec, self.mtvec
         );
+        println!(
+            "sstatus(0x100):\t0x{:016X}, 0b{:064b}",
+            self.sstatus, self.sstatus
+        );
+        println!("sie(0x104):\t0x{:016X}, 0b{:064b}", self.sie, self.sie);
+        println!(
+            "stvec(0x105):\t0x{:016X}, 0b{:064b}",
+            self.stvec, self.stvec
+        );
+        println!(
+            "sscratch(0x140):0x{:016X}, 0b{:064b}",
+            self.sscratch, self.sscratch
+        );
+        println!("sepc(0x141):\t0x{:016X}, 0b{:064b}", self.sepc, self.sepc);
+        println!(
+            "scause(0x142):\t0x{:016X}, 0b{:064b}",
+            self.scause, self.scause
+        );
+        println!("sip(0x144):\t0x{:016X}, 0b{:064b}", self.sip, self.sip);
     }
 
     pub fn get_reg(&self, reg: u8) -> u64 {
