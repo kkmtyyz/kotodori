@@ -102,9 +102,12 @@ impl Cpu {
         loop {
             let data = self.fetch();
             let inst = Instruction::decode(data);
-            println!("instruction: ");
-            inst.print();
-            println!("pc: 0x{:016X}", self.reg.pc);
+
+            if self.dbg.enable {
+                println!("instruction: ");
+                inst.print();
+                println!("pc: 0x{:016X}", self.reg.pc);
+            }
 
             let pre_pc = self.reg.pc;
             self.exec_instruction(&inst);
