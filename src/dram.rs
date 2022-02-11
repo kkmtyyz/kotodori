@@ -28,6 +28,7 @@ impl Dram {
         }
     }
 
+    #[allow(dead_code)]
     pub fn print(&self) {
         println!("{:?}", self.memory);
     }

@@ -3,9 +3,9 @@
 pub const UART: u64 = 0x10000000;
 pub const THR: u64 = UART;
 pub const RBR: u64 = UART;
-pub const DLL: u64 = UART;
+// pub const DLL: u64 = UART;
 pub const IER: u64 = UART + 1;
-pub const DLH: u64 = UART + 1;
+// pub const DLH: u64 = UART + 1;
 pub const IIR: u64 = UART + 2;
 pub const FCR: u64 = UART + 2;
 pub const LCR: u64 = UART + 3;
@@ -16,30 +16,30 @@ pub const SR: u64 = UART + 7;
 pub const UART_END: u64 = SR;
 
 // IER bit
-const IER_RHRI: u8 = 0b0000_0001; // receive holding register interrupt
-const IER_THRI: u8 = 0b0000_0010; // transmit holding register interrupt
-const IER_RLSI: u8 = 0b0000_0100; // receive line status interrupt
-const IER_MSI: u8 = 0b0000_1000; // modem status interrupt
+// const IER_RHRI: u8 = 0b0000_0001; // receive holding register interrupt
+// const IER_THRI: u8 = 0b0000_0010; // transmit holding register interrupt
+// const IER_RLSI: u8 = 0b0000_0100; // receive line status interrupt
+// const IER_MSI: u8 = 0b0000_1000; // modem status interrupt
 
 // LCR bit
-const LCR_WLB0: u8 = 0b0000_0001; // word length bit 0
-const LCR_WLB1: u8 = 0b0000_0010; // word length bit 1
-const LCR_SBi: u8 = 0b0000_0100; // stop bits
-const LCR_PE: u8 = 0b0000_1000; // parity enable
-const LCR_EP: u8 = 0b0001_0000; // even parity
-const LCR_SP: u8 = 0b0010_0000; // set parity
-const LCR_SBr: u8 = 0b0100_0000; // set break
+// const LCR_WLB0: u8 = 0b0000_0001; // word length bit 0
+// const LCR_WLB1: u8 = 0b0000_0010; // word length bit 1
+// const LCR_SBi: u8 = 0b0000_0100; // stop bits
+// const LCR_PE: u8 = 0b0000_1000; // parity enable
+// const LCR_EP: u8 = 0b0001_0000; // even parity
+// const LCR_SP: u8 = 0b0010_0000; // set parity
+// const LCR_SBr: u8 = 0b0100_0000; // set break
 const LCR_DLE: u8 = 0b1000_0000; // divisor latch enable
 
 // LSR bit
-const LSR_RDR: u8 = 0b0000_0001; // receive data ready
-const LSR_OE: u8 = 0b0000_0010; // overrun error
-const LSR_PE: u8 = 0b0000_0100; // parity error
-const LSR_FE: u8 = 0b0000_1000; // framing error
-const LSR_BI: u8 = 0b0001_0000; // break interrupt
+// const LSR_RDR: u8 = 0b0000_0001; // receive data ready
+// const LSR_OE: u8 = 0b0000_0010; // overrun error
+// const LSR_PE: u8 = 0b0000_0100; // parity error
+// const LSR_FE: u8 = 0b0000_1000; // framing error
+// const LSR_BI: u8 = 0b0001_0000; // break interrupt
 const LSR_THE: u8 = 0b0010_0000; // transmit holding empty
-const LSR_TE: u8 = 0b0100_0000; // transmit empty
-const LSR_0FE: u8 = 0b1000_0000; // 0/FIFO error
+// const LSR_TE: u8 = 0b0100_0000; // transmit empty
+// const LSR_0FE: u8 = 0b1000_0000; // 0/FIFO error
 
 #[derive(Debug)]
 pub struct Uart {
@@ -143,6 +143,7 @@ impl Uart {
         }
         self.lsr |= !LSR_THE;
         self.thr_rbr = data as u8;
+        p_ascii(self.thr_rbr);
         self.lsr |= LSR_THE;
     }
 
@@ -155,4 +156,11 @@ impl Uart {
 
         self.ier = data as u8;
     }
+}
+
+fn p_ascii(code: u8) {
+    if !code.is_ascii() {
+        panic!("p_ascii code is not ascii code: 0x{:02X}", code);
+    }
+    print!("{}", code as char);
 }

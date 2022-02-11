@@ -140,7 +140,7 @@ fn is_disabled_int(reg: &Register, int_code: u64, int_mode: &Mode) -> bool {
     false
 }
 
-fn m_int(reg: &mut Register, current_mode: &mut Mode, int_code: u64) {
+fn m_int(reg: &mut Register, current_mode: &mut Mode, _int_code: u64) {
     *current_mode = Mode::M;
 
     let mstatus_mie = (reg.mstatus & MSTATUS_MIE) >> 3;
@@ -152,7 +152,7 @@ fn m_int(reg: &mut Register, current_mode: &mut Mode, int_code: u64) {
     reg.pc = reg.mtvec;
 }
 
-fn s_int(reg: &mut Register, current_mode: &mut Mode, int_code: u64) {
+fn s_int(reg: &mut Register, current_mode: &mut Mode, _int_code: u64) {
     *current_mode = Mode::S;
 
     let sstatus_sie = (reg.sstatus & SSTATUS_SIE) >> 1;
@@ -164,6 +164,7 @@ fn s_int(reg: &mut Register, current_mode: &mut Mode, int_code: u64) {
     reg.pc = reg.stvec;
 }
 
+#[allow(dead_code)]
 pub fn m_trap(reg: &mut Register, current_mode: &mut Mode) {
     let e_code = reg.mcause & 0x7FFF_FFFF_FFF_FFF;
     //trap(reg, current_mode, e_code);
@@ -174,14 +175,17 @@ pub fn m_trap(reg: &mut Register, current_mode: &mut Mode) {
     }
 }
 
-pub fn s_trap(reg: &mut Register, current_mode: &mut Mode) {
-    let e_code = reg.scause & 0x7FFF_FFFF_FFF_FFF;
+#[allow(dead_code)]
+pub fn s_trap(reg: &mut Register, _current_mode: &mut Mode) {
+    let _e_code = reg.scause & 0x7FFF_FFFF_FFF_FFF;
 }
 
-fn m_exception(reg: &mut Register, mode: &mut Mode, e_code: u64) {
+#[allow(dead_code)]
+fn m_exception(_reg: &mut Register, mode: &mut Mode, _e_code: u64) {
     *mode = Mode::M;
 }
 
-fn s_exception(reg: &mut Register, mode: &mut Mode, e_code: u64) {
+#[allow(dead_code)]
+fn s_exception(_reg: &mut Register, mode: &mut Mode, _e_code: u64) {
     *mode = Mode::S;
 }

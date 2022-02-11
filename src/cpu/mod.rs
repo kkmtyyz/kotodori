@@ -762,7 +762,7 @@ impl Cpu {
     }
 
     /// ExceptionReturn(User)
-    fn sret(&mut self, inst: &Instruction) {
+    fn sret(&mut self, _inst: &Instruction) {
         let pre_spp = (self.reg.sstatus & 0b1_1000_0000_0000) >> 11;
         let spie = self.reg.sstatus & 0b100_0000;
         let sie = spie >> 3;
@@ -784,7 +784,7 @@ impl Cpu {
     }
 
     /// ExceptionReturn(Machine)
-    fn mret(&mut self, inst: &Instruction) {
+    fn mret(&mut self, _inst: &Instruction) {
         let pre_mpp = (self.reg.mstatus & 0b1_1000_0000_0000) >> 11;
         let mpie = self.reg.mstatus & 0b100_0000;
         let mie = mpie >> 3;
