@@ -317,96 +317,63 @@ impl Register {
     }
 
     pub fn print(&self) {
-        println!("zero(0x000):\t0x{:016X}, 0b{:064b}", self.zero, self.zero);
-        println!("ra(0x001):\t0x{:016X}, 0b{:064b}", self.ra, self.ra);
-        println!("sp(0x002):\t0x{:016X}, 0b{:064b}", self.sp, self.sp);
-        println!("gp(0x003):\t0x{:016X}, 0b{:064b}", self.gp, self.gp);
-        println!("tp(0x004):\t0x{:016X}, 0b{:064b}", self.tp, self.tp);
-        println!("t0(0x005):\t0x{:016X}, 0b{:064b}", self.t0, self.t0);
-        println!("t1(0x006):\t0x{:016X}, 0b{:064b}", self.t1, self.t1);
-        println!("t2(0x007):\t0x{:016X}, 0b{:064b}", self.t2, self.t2);
-        println!("fp(0x008):\t0x{:016X}, 0b{:064b}", self.fp, self.fp);
-        println!("s1(0x009):\t0x{:016X}, 0b{:064b}", self.s1, self.s1);
-        println!("a0(0x00A):\t0x{:016X}, 0b{:064b}", self.a0, self.a0);
-        println!("a1(0x00B):\t0x{:016X}, 0b{:064b}", self.a1, self.a1);
-        println!("a2(0x00C):\t0x{:016X}, 0b{:064b}", self.a2, self.a2);
-        println!("a3(0x00D):\t0x{:016X}, 0b{:064b}", self.a3, self.a3);
-        println!("a4(0x00E):\t0x{:016X}, 0b{:064b}", self.a4, self.a4);
-        println!("a5(0x00F):\t0x{:016X}, 0b{:064b}", self.a5, self.a5);
-        println!("a6(0x010):\t0x{:016X}, 0b{:064b}", self.a6, self.a6);
-        println!("a7(0x011):\t0x{:016X}, 0b{:064b}", self.a7, self.a7);
-        println!("s2(0x012):\t0x{:016X}, 0b{:064b}", self.s5, self.s5);
-        println!("s3(0x013):\t0x{:016X}, 0b{:064b}", self.s3, self.s3);
-        println!("s4(0x014):\t0x{:016X}, 0b{:064b}", self.s4, self.s4);
-        println!("s5(0x015):\t0x{:016X}, 0b{:064b}", self.s5, self.s5);
-        println!("s6(0x016):\t0x{:016X}, 0b{:064b}", self.s6, self.s6);
-        println!("s7(0x017):\t0x{:016X}, 0b{:064b}", self.s7, self.s7);
-        println!("s8(0x018):\t0x{:016X}, 0b{:064b}", self.s8, self.s8);
-        println!("s9(0x019):\t0x{:016X}, 0b{:064b}", self.s9, self.s9);
-        println!("s10(0x01A):\t0x{:016X}, 0b{:064b}", self.s10, self.s10);
-        println!("s11(0x01B):\t0x{:016X}, 0b{:064b}", self.s11, self.s11);
-        println!("t3(0x01C):\t0x{:016X}, 0b{:064b}", self.t3, self.t3);
-        println!("t4(0x01D):\t0x{:016X}, 0b{:064b}", self.t4, self.t4);
-        println!("t5(0x01E):\t0x{:016X}, 0b{:064b}", self.t5, self.t5);
-        println!("t6(0x01F):\t0x{:016X}, 0b{:064b}", self.t6, self.t6);
-        println!("pc(0x020):\t0x{:016X}, 0b{:064b}", self.pc, self.pc);
-        println!(
-            "mstatus(0x300):\t0x{:016X}, 0b{:064b}",
-            self.mstatus, self.mstatus
-        );
-        println!("mie(0x304):\t0x{:016X}, 0b{:064b}", self.mie, self.mie);
-        println!("mip(0x344):\t0x{:016X}, 0b{:064b}", self.mip, self.mip);
-        println!("mepc(0x341):\t0x{:016X}, 0b{:064b}", self.mepc, self.mepc);
-        println!(
-            "medeleg(0x302):\t0x{:016X}, 0b{:064b}",
-            self.medeleg, self.medeleg
-        );
-        println!(
-            "mideleg(0x303):\t0x{:016X}, 0b{:064b}",
-            self.mideleg, self.mideleg
-        );
-        println!(
-            "mscratch(0x340):0x{:016X}, 0b{:064b}",
-            self.mscratch, self.mscratch
-        );
-        println!(
-            "sstatus(0x100):\t0x{:016X}, 0b{:064b}",
-            self.sstatus, self.sstatus
-        );
-        println!("sie(0x104):\t0x{:016X}, 0b{:064b}", self.sie, self.sie);
-        println!("satp(0x180):\t0x{:016X}, 0b{:064b}", self.satp, self.satp);
+        let mut zero_ls: Vec<String> = vec![];
+        non_zero_print("zero", "0x000", self.zero, &mut zero_ls);
+        non_zero_print("ra", "0x001", self.ra, &mut zero_ls);
+        non_zero_print("sp", "0x002", self.sp, &mut zero_ls);
+        non_zero_print("gp", "0x003", self.gp, &mut zero_ls);
+        non_zero_print("tp", "0x004", self.tp, &mut zero_ls);
+        non_zero_print("t0", "0x005", self.t0, &mut zero_ls);
+        non_zero_print("t1", "0x006", self.t1, &mut zero_ls);
+        non_zero_print("t2", "0x007", self.t2, &mut zero_ls);
+        non_zero_print("fp", "0x008", self.fp, &mut zero_ls);
+        non_zero_print("s1", "0x009", self.s1, &mut zero_ls);
+        non_zero_print("a0", "0x00A", self.a0, &mut zero_ls);
+        non_zero_print("a1", "0x00B", self.a1, &mut zero_ls);
+        non_zero_print("a2", "0x00C", self.a2, &mut zero_ls);
+        non_zero_print("a3", "0x00D", self.a3, &mut zero_ls);
+        non_zero_print("a4", "0x00E", self.a4, &mut zero_ls);
+        non_zero_print("a5", "0x00F", self.a5, &mut zero_ls);
+        non_zero_print("a6", "0x010", self.a6, &mut zero_ls);
+        non_zero_print("a7", "0x011", self.a7, &mut zero_ls);
+        non_zero_print("s2", "0x012", self.s2, &mut zero_ls);
+        non_zero_print("s3", "0x013", self.s2, &mut zero_ls);
+        non_zero_print("s4", "0x014", self.s2, &mut zero_ls);
+        non_zero_print("s5", "0x015", self.s2, &mut zero_ls);
+        non_zero_print("s6", "0x016", self.s2, &mut zero_ls);
+        non_zero_print("s7", "0x017", self.s2, &mut zero_ls);
+        non_zero_print("s8", "0x018", self.s2, &mut zero_ls);
+        non_zero_print("s9", "0x019", self.s2, &mut zero_ls);
+        non_zero_print("s10", "0x01A", self.s2, &mut zero_ls);
+        non_zero_print("s11", "0x01B", self.s2, &mut zero_ls);
+        non_zero_print("t3", "0x01C", self.t3, &mut zero_ls);
+        non_zero_print("t4", "0x01D", self.t4, &mut zero_ls);
+        non_zero_print("t5", "0x01E", self.t5, &mut zero_ls);
+        non_zero_print("t6", "0x01F", self.t6, &mut zero_ls);
+        non_zero_print("pc", "0x020", self.pc, &mut zero_ls);
 
-        println!(
-            "pmpaddr0(0x3B0):0x{:016X}, 0b{:064b}",
-            self.pmpaddr0, self.pmpaddr0
-        );
-        println!(
-            "pmpcfg0(0x3A0):\t0x{:016X}, 0b{:064b}",
-            self.pmpcfg0, self.pmpcfg0
-        );
-        println!(
-            "mtvec(0x305):\t0x{:016X}, 0b{:064b}",
-            self.mtvec, self.mtvec
-        );
-        println!(
-            "sstatus(0x100):\t0x{:016X}, 0b{:064b}",
-            self.sstatus, self.sstatus
-        );
-        println!("sie(0x104):\t0x{:016X}, 0b{:064b}", self.sie, self.sie);
-        println!(
-            "stvec(0x105):\t0x{:016X}, 0b{:064b}",
-            self.stvec, self.stvec
-        );
-        println!(
-            "sscratch(0x140):0x{:016X}, 0b{:064b}",
-            self.sscratch, self.sscratch
-        );
-        println!("sepc(0x141):\t0x{:016X}, 0b{:064b}", self.sepc, self.sepc);
-        println!(
-            "scause(0x142):\t0x{:016X}, 0b{:064b}",
-            self.scause, self.scause
-        );
-        println!("sip(0x144):\t0x{:016X}, 0b{:064b}", self.sip, self.sip);
+        non_zero_print("mstatus", "0x300", self.mstatus, &mut zero_ls);
+        non_zero_print("medeleg", "0x302", self.medeleg, &mut zero_ls);
+        non_zero_print("mideleg", "0x303", self.mideleg, &mut zero_ls);
+        non_zero_print("mie", "0x304", self.mie, &mut zero_ls);
+        non_zero_print("mscratch", "0x340", self.mscratch, &mut zero_ls);
+        non_zero_print("mepc", "0x341", self.mepc, &mut zero_ls);
+        non_zero_print("mip", "0x344", self.mip, &mut zero_ls);
+        non_zero_print("mtvec", "0x3B0", self.mtvec, &mut zero_ls);
+
+        non_zero_print("sstatus", "0x100", self.sstatus, &mut zero_ls);
+        non_zero_print("sie", "0x104", self.sie, &mut zero_ls);
+        non_zero_print("stvec", "0x105", self.stvec, &mut zero_ls);
+        non_zero_print("sscratch", "0x140", self.sscratch, &mut zero_ls);
+        non_zero_print("sepc", "0x141", self.sepc, &mut zero_ls);
+        non_zero_print("scause", "0x142", self.scause, &mut zero_ls);
+        non_zero_print("sip", "0x144", self.sip, &mut zero_ls);
+        non_zero_print("satp", "0x180", self.satp, &mut zero_ls);
+
+        non_zero_print("pmpaddr0", "0x3B0", self.pmpaddr0, &mut zero_ls);
+        non_zero_print("pmpcfg0", "0x3A0", self.pmpcfg0, &mut zero_ls);
+
+        println!("zero: {:?}", zero_ls);
     }
 
     pub fn get_reg(&self, reg: u8) -> u64 {
@@ -736,4 +703,18 @@ impl Register {
             _ => panic!("invalid register"),
         }
     }
+}
+
+/// example:
+/// println!("zero(0x000):\t0x{:016X}, 0b{:064b}", <zero register value>, <zero register value>);
+fn non_zero_print(reg_name: &str, reg_code: &str, value: u64, zero_ls: &mut Vec<String>) {
+    if value == 0 {
+        zero_ls.push(reg_name.to_string());
+        return;
+    }
+    let mut reg_name = format!("{}({}):", reg_name, reg_code);
+    if reg_name.len() < 16 {
+        reg_name += "\t";
+    }
+    println!("{}0x{:016X}, 0b{:064b}", reg_name, value, value);
 }

@@ -38,8 +38,8 @@ const LCR_DLE: u8 = 0b1000_0000; // divisor latch enable
 // const LSR_FE: u8 = 0b0000_1000; // framing error
 // const LSR_BI: u8 = 0b0001_0000; // break interrupt
 const LSR_THE: u8 = 0b0010_0000; // transmit holding empty
-// const LSR_TE: u8 = 0b0100_0000; // transmit empty
-// const LSR_0FE: u8 = 0b1000_0000; // 0/FIFO error
+                                 // const LSR_TE: u8 = 0b0100_0000; // transmit empty
+                                 // const LSR_0FE: u8 = 0b1000_0000; // 0/FIFO error
 
 #[derive(Debug)]
 pub struct Uart {
