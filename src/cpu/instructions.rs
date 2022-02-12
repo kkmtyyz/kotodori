@@ -8,6 +8,7 @@ fn to_format(opcode: u8, funct3: u8, funct7: u8) -> InstFmt {
         0b000_0011 => InstFmt::I,
         0b010_0011 => InstFmt::S,
         0b001_0011 => InstFmt::I,
+        0b010_1111 => InstFmt::R,
         0b011_0011 => InstFmt::R,
         0b000_1111 => InstFmt::I,
         0b111_0011 => match funct3 {
@@ -62,10 +63,13 @@ fn to_name(opcode: u8, funct3: u8, funct7: u8, funct12: u16) -> InstName {
             0b110 => InstName::Ori("ori".to_owned()),
             0b111 => InstName::Andi("andi".to_owned()),
             0b001 => InstName::Slli("slli".to_owned()),
-            0b101 => match funct7 {
-                0b000_0000 => InstName::Srli("srli".to_owned()),
-                0b010_0000 => InstName::Srai("srai".to_owned()),
+            0b101 => {
+                let funct6 = funct7 >> 1;
+                match funct6 {
+                0b00_0000 => InstName::Srli("srli".to_owned()),
+                0b01_0000 => InstName::Srai("srai".to_owned()),
                 _ => panic!("convert to instruction name"),
+                }
             },
             _ => panic!("convert to instruction name"),
         },
@@ -156,19 +160,22 @@ fn to_name(opcode: u8, funct3: u8, funct7: u8, funct12: u16) -> InstName {
                     0b1_1100 => InstName::AmomaxuW("amomaxu.w".to_owned()),
                     _ => panic!("convert to instruction name"),
                 },
-                0b011 => match funct7 {
-                    0b0_0010 => InstName::LrD("lr.d".to_owned()),
-                    0b0_0011 => InstName::ScD("sc.d".to_owned()),
-                    0b0_0001 => InstName::AmoswapD("amoswap.d".to_owned()),
-                    0b0_0000 => InstName::AmoaddD("amoadd.d".to_owned()),
-                    0b0_0100 => InstName::AmoxorD("amoxor.d".to_owned()),
-                    0b0_1100 => InstName::AmoandD("amoand.d".to_owned()),
-                    0b0_1000 => InstName::AmoorD("amoor.d".to_owned()),
-                    0b1_0000 => InstName::AmominD("amomin.d".to_owned()),
-                    0b1_0100 => InstName::AmomaxD("amomax.d".to_owned()),
-                    0b1_1000 => InstName::AmominuD("amominu.d".to_owned()),
-                    0b1_1100 => InstName::AmomaxuD("amomaxu.d".to_owned()),
-                    _ => panic!("convert to instruction name"),
+                0b011 => {
+                    let funct5 = funct7 >> 2;
+                    match funct5 {
+                        0b0_0010 => InstName::LrD("lr.d".to_owned()),
+                        0b0_0011 => InstName::ScD("sc.d".to_owned()),
+                        0b0_0001 => InstName::AmoswapD("amoswap.d".to_owned()),
+                        0b0_0000 => InstName::AmoaddD("amoadd.d".to_owned()),
+                        0b0_0100 => InstName::AmoxorD("amoxor.d".to_owned()),
+                        0b0_1100 => InstName::AmoandD("amoand.d".to_owned()),
+                        0b0_1000 => InstName::AmoorD("amoor.d".to_owned()),
+                        0b1_0000 => InstName::AmominD("amomin.d".to_owned()),
+                        0b1_0100 => InstName::AmomaxD("amomax.d".to_owned()),
+                        0b1_1000 => InstName::AmominuD("amominu.d".to_owned()),
+                        0b1_1100 => InstName::AmomaxuD("amomaxu.d".to_owned()),
+                        _ => panic!("convert to instruction name"),
+                    }
                 },
                 _ => panic!("convert to instruction name"),
             }
@@ -419,6 +426,10 @@ impl Instruction {
         let funct7 = (inst >> 25 & 0b111_1111) as u8;
         let fmt = to_format(opcode, funct3, funct7);
         let (funct3, funct7, funct12) = to_funct(inst, &fmt);
+        // println!("inst: 0b{:032b}", inst);
+        // println!("funct3: 0b{:016b}", funct3);
+        // println!("funct7: 0b{:016b}", funct7);
+        // println!("funct12: 0b{:016b}", funct12);
         let name = to_name(opcode, funct3, funct7, funct12);
         let (rs1, rs2, rd, imm) = to_ri(inst, &fmt);
         Instruction {
