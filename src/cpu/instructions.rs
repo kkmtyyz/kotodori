@@ -66,11 +66,11 @@ fn to_name(opcode: u8, funct3: u8, funct7: u8, funct12: u16) -> InstName {
             0b101 => {
                 let funct6 = funct7 >> 1;
                 match funct6 {
-                0b00_0000 => InstName::Srli("srli".to_owned()),
-                0b01_0000 => InstName::Srai("srai".to_owned()),
-                _ => panic!("convert to instruction name"),
+                    0b00_0000 => InstName::Srli("srli".to_owned()),
+                    0b01_0000 => InstName::Srai("srai".to_owned()),
+                    _ => panic!("convert to instruction name"),
                 }
-            },
+            }
             _ => panic!("convert to instruction name"),
         },
         0b011_0011 => match funct3 {
@@ -176,7 +176,7 @@ fn to_name(opcode: u8, funct3: u8, funct7: u8, funct12: u16) -> InstName {
                         0b1_1100 => InstName::AmomaxuD("amomaxu.d".to_owned()),
                         _ => panic!("convert to instruction name"),
                     }
-                },
+                }
                 _ => panic!("convert to instruction name"),
             }
         }
