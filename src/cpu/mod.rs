@@ -103,7 +103,7 @@ impl Cpu {
             let data = self.fetch();
             let inst = Instruction::decode(data);
 
-            if self.dbg.enable {
+            if self.dbg.enable && self.dbg_step {
                 println!("instruction: ");
                 inst.print();
                 println!("pc: 0x{:016X}", self.reg.pc);
@@ -417,21 +417,24 @@ impl Cpu {
     /// if (rs1 >=s rs2) pc += sext(offset)
     fn bge(&mut self, inst: &Instruction) {
         if (self.reg.get_reg(inst.rs1) as i64) >= (self.reg.get_reg(inst.rs2) as i64) {
-            self.reg.pc = (self.reg.pc as i64 + inst.imm as i64) as u64;
+            let imm = b12_to_sign64(inst.imm);
+            self.reg.pc = (self.reg.pc as i64 + imm) as u64;
         }
     }
 
     /// if (rs1 >u rs2) pc += sext(offset)
     fn bltu(&mut self, inst: &Instruction) {
         if self.reg.get_reg(inst.rs1) < self.reg.get_reg(inst.rs2) {
-            self.reg.pc = (self.reg.pc as i64 + inst.imm as i64) as u64;
+            let imm = b12_to_sign64(inst.imm);
+            self.reg.pc = (self.reg.pc as i64 + imm) as u64;
         }
     }
 
     /// if (rs1 >=u rs2) pc += sext(offset)
     fn bgeu(&mut self, inst: &Instruction) {
         if self.reg.get_reg(inst.rs1) >= self.reg.get_reg(inst.rs2) {
-            self.reg.pc = (self.reg.pc as i64 + inst.imm as i64) as u64;
+            let imm = b12_to_sign64(inst.imm);
+            self.reg.pc = (self.reg.pc as i64 + imm) as u64;
         }
     }
 
@@ -960,7 +963,6 @@ impl Cpu {
             data = self.bus.lw_dram(addr as u64) as u32;
         }
 
-        self.reg.set_reg(inst.rd, data as u64);
         if mm {
             self.bus
                 .s_mm(addr, self.reg.get_reg(inst.rs2) as u32 as u64);
@@ -968,6 +970,7 @@ impl Cpu {
             self.bus.sw_dram(addr, self.reg.get_reg(inst.rs2) as u32);
         }
         self.reg.set_reg(inst.rs2, data as i32 as i64 as u64);
+        self.reg.set_reg(inst.rd, data as u64);
     }
 
     /// x[rd] = AMO32(M[x[rs1]] + x[rs2])
@@ -988,9 +991,9 @@ impl Cpu {
             data = self.bus.lw_dram(addr as u64) as u32;
         }
 
-        self.reg.set_reg(inst.rd, data as i32 as i64 as u64);
         let data = data as i32 + self.reg.get_reg(inst.rs2) as i32;
         self.bus.sw_dram(addr, data as u32);
+        self.reg.set_reg(inst.rd, data as i32 as i64 as u64);
     }
 
     /// x[rd] = AMO32(M[x[rs1]] ^ x[rs2])
@@ -1011,9 +1014,9 @@ impl Cpu {
             data = self.bus.lw_dram(addr as u64) as u32;
         }
 
-        self.reg.set_reg(inst.rd, data as i32 as i64 as u64);
         let data = data ^ self.reg.get_reg(inst.rs2) as u32;
         self.bus.sw_dram(addr, data);
+        self.reg.set_reg(inst.rd, data as i32 as i64 as u64);
     }
 
     /// x[rd] = AMO32(M[x[rs1]] & x[rs2])
@@ -1034,9 +1037,9 @@ impl Cpu {
             data = self.bus.lw_dram(addr as u64) as u32;
         }
 
-        self.reg.set_reg(inst.rd, data as i32 as i64 as u64);
         let data = data & self.reg.get_reg(inst.rs2) as u32;
         self.bus.sw_dram(addr, data);
+        self.reg.set_reg(inst.rd, data as i32 as i64 as u64);
     }
 
     /// x[rd] = AMO32(M[x[rs1]] | x[rs2])
@@ -1057,9 +1060,9 @@ impl Cpu {
             data = self.bus.lw_dram(addr as u64) as u32;
         }
 
-        self.reg.set_reg(inst.rd, data as i32 as i64 as u64);
         let data = data | self.reg.get_reg(inst.rs2) as u32;
         self.bus.sw_dram(addr, data);
+        self.reg.set_reg(inst.rd, data as i32 as i64 as u64);
     }
 
     /// x[rd] = AMO32(M[x[rs1]] MIN x[rs2])
@@ -1080,14 +1083,13 @@ impl Cpu {
             data = self.bus.lw_dram(addr as u64) as u32;
         }
 
-        self.reg.set_reg(inst.rd, data as i32 as i64 as u64);
-
         let rs2_v = self.reg.get_reg(inst.rs2) as i64 as i32;
         if (data as i32) < rs2_v {
             self.bus.sw_dram(addr, data);
         } else {
             self.bus.sw_dram(addr, self.reg.get_reg(inst.rs2) as u32);
         }
+        self.reg.set_reg(inst.rd, data as i32 as i64 as u64);
     }
 
     /// x[rd] = AMO32(M[x[rs1]] MAX x[rs2])
@@ -1108,14 +1110,13 @@ impl Cpu {
             data = self.bus.lw_dram(addr as u64) as u32;
         }
 
-        self.reg.set_reg(inst.rd, data as i32 as i64 as u64);
-
         let rs2_v = self.reg.get_reg(inst.rs2) as i64 as i32;
         if (data as i32) < rs2_v {
             self.bus.sw_dram(addr, self.reg.get_reg(inst.rs2) as u32);
         } else {
             self.bus.sw_dram(addr, data);
         }
+        self.reg.set_reg(inst.rd, data as i32 as i64 as u64);
     }
 
     /// x[rd] = AMO32(M[x[rs1]] MINU x[rs2])
@@ -1136,13 +1137,13 @@ impl Cpu {
             data = self.bus.lw_dram(addr as u64) as u32;
         }
 
-        self.reg.set_reg(inst.rd, data as i32 as i64 as u64);
         let rs2_v = self.reg.get_reg(inst.rs2) as i64 as i32;
         if (data as i32) < rs2_v {
             self.bus.sw_dram(addr, data);
         } else {
             self.bus.sw_dram(addr, self.reg.get_reg(inst.rs2) as u32);
         }
+        self.reg.set_reg(inst.rd, data as i32 as i64 as u64);
     }
 
     /// x[rd] = AMO32(M[x[rs1]] MAXU x[rs2])
@@ -1163,13 +1164,13 @@ impl Cpu {
             data = self.bus.lw_dram(addr as u64) as u32;
         }
 
-        self.reg.set_reg(inst.rd, data as i32 as i64 as u64);
         let rs2_v = self.reg.get_reg(inst.rs2) as i64 as i32;
         if (data as i32) < rs2_v {
             self.bus.sw_dram(addr, self.reg.get_reg(inst.rs2) as u32);
         } else {
             self.bus.sw_dram(addr, data);
         }
+        self.reg.set_reg(inst.rd, data as i32 as i64 as u64);
     }
 
     /// x[rd] = M[x[rs1] + sext(offset)][31:0]
@@ -1351,9 +1352,9 @@ impl Cpu {
         self.check_pmp(addr, PMPPerm::W);
 
         let data = self.bus.ld_dram(addr);
-        self.reg.set_reg(inst.rd, data);
         self.bus.sd_dram(addr, self.reg.get_reg(inst.rs2));
         self.reg.set_reg(inst.rs2, data);
+        self.reg.set_reg(inst.rd, data);
     }
 
     /// x[rd] = AMO64(M[x[rs1]] + x[rs2])
