@@ -578,7 +578,8 @@ impl Cpu {
 
     /// x[rd] = x[rs1] <s sext(immediate)
     fn slti(&mut self, inst: &Instruction) {
-        if (self.reg.get_reg(inst.rs1) as i64) < (inst.imm as i64) {
+        let imm = to_sign64(inst.imm as u64, 0x800);
+        if (self.reg.get_reg(inst.rs1) as i64) < imm {
             self.reg.set_reg(inst.rd, 1);
         } else {
             self.reg.set_reg(inst.rd, 0);
@@ -587,7 +588,8 @@ impl Cpu {
 
     /// x[rd] = x[rs1] <u sext(immediate)
     fn sltiu(&mut self, inst: &Instruction) {
-        if self.reg.get_reg(inst.rs1) < inst.imm as u64 {
+        let imm = to_sign64(inst.imm as u64, 0x800);
+        if self.reg.get_reg(inst.rs1) < imm as u64 {
             self.reg.set_reg(inst.rd, 1);
         } else {
             self.reg.set_reg(inst.rd, 0);
@@ -596,19 +598,22 @@ impl Cpu {
 
     /// x[rd] = x[rs1] ^ sext(immediate)
     fn xori(&mut self, inst: &Instruction) {
-        let v = (inst.imm as i64) ^ (self.reg.get_reg(inst.rs1) as i64);
+        let imm = to_sign64(inst.imm as u64, 0x800);
+        let v = imm ^ (self.reg.get_reg(inst.rs1) as i64);
         self.reg.set_reg(inst.rd, v as u64);
     }
 
     /// x[rd] = x[rs1] | sext(immediate)
     fn ori(&mut self, inst: &Instruction) {
-        let v = (inst.imm as i64) | (self.reg.get_reg(inst.rs1) as i64);
+        let imm = b12_to_sign64(inst.imm);
+        let v = imm | (self.reg.get_reg(inst.rs1) as i64);
         self.reg.set_reg(inst.rd, v as u64);
     }
 
     /// x[rd] = x[rs1] & sext(immediate)
     fn andi(&mut self, inst: &Instruction) {
-        let v = (inst.imm as i64) & (self.reg.get_reg(inst.rs1) as i64);
+        let imm = b12_to_sign64(inst.imm);
+        let v = imm & (self.reg.get_reg(inst.rs1) as i64);
         self.reg.set_reg(inst.rd, v as u64);
     }
 
@@ -1470,6 +1475,32 @@ impl Cpu {
             self.bus.sd_dram(addr, data);
         }
     }
+}
+
+/// Sign-extended when imm is negative.
+/// # Examples
+/// ```ignore
+/// let imm = 0xAD; // 0b1010_1101
+/// let sign_bit = 0x80; // 0b1000_0000
+/// assert_eq!(0xFFFF_FFFF_FFFF_FFAD, cpu::to_sign64(imm, sign_bit));
+/// ```
+fn to_sign64(imm: u64, sign_bit: u64) -> i64 {
+    if sign_bit & imm == 0 {
+        return imm as i64;
+    }
+
+    let mut sign = 1;
+    let mut shift_cnt = sign_bit;
+    loop {
+        shift_cnt >>= 1;
+        if shift_cnt == 0 {
+            break;
+        }
+        sign <<= 1;
+        sign += 1;
+    }
+
+    (imm | !sign) as i64
 }
 
 /// Sign-extended when imm is negative. (imm is 12bit)

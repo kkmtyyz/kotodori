@@ -86,7 +86,7 @@ impl Emulator {
 /// If the `size` is 0, 0 is returned.
 ///
 /// # Examples
-/// ```rust
+/// ```ignore
 /// let data: Vec<u8> = vec![0x12, 0x34, 0x56, 0x78];
 /// assert_eq!(get_ltl(&data, 1, 2), 0x5634);
 /// assert_eq!(get_ltl(&data, 0, 1), 0x12);
