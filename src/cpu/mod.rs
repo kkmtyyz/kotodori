@@ -132,24 +132,38 @@ impl Cpu {
         }
     }
 
-    fn debug(&self) {
+    fn debug(&mut self) {
         loop {
             print!(">> ");
             stdout().flush().unwrap();
             let mut b = String::new();
             std::io::stdin().read_line(&mut b).ok();
             if b.trim() == "".to_string() {
+                // next instruction
                 break;
             } else if b.trim() == "p".to_string() {
+                // print registers
                 self.print();
             } else if b.starts_with("m") {
+                // print memory range
+                // example: m 0x80001000 0x80001FFF
                 let mut b = b.split_whitespace();
                 b.next(); // remove m
                 let begin = util::hex_to_usize(b.next().unwrap());
                 let end = util::hex_to_usize(b.next().unwrap());
                 self.bus.pdram_range(begin, end);
             } else if b.trim() == "uart".to_string() {
+                // print UART registers
                 self.bus.puart();
+            } else if b.starts_with("b") {
+                // set break point
+                // example: b 0x8000157c
+                let mut b = b.split_whitespace();
+                b.next(); // remove b
+                let bp = util::hex_to_usize(b.next().unwrap());
+                self.dbg.bp = bp as u64;
+                self.dbg_step = false;
+                break;
             }
         }
         println!();
