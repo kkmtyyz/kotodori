@@ -1194,7 +1194,8 @@ impl Cpu {
 
     /// x[rd] = M[x[rs1] + sext(offset)][31:0]
     fn lwu(&mut self, inst: &Instruction) {
-        let addr = self.reg.get_reg(inst.rs1) as i64 + inst.imm as i64;
+        let imm = to_sign64(inst.imm as u64, 0x800);
+        let addr = self.reg.get_reg(inst.rs1) as i64 + imm;
         self.check_pmp(addr as u64, PMPPerm::R);
 
         let v: u64;
@@ -1209,7 +1210,7 @@ impl Cpu {
 
     /// x[rd] = M[x[rs1] + sext(offset)][63:0]
     fn ld(&mut self, inst: &Instruction) {
-        let imm = b12_to_sign64(inst.imm);
+        let imm = to_sign64(inst.imm as u64, 0x800);
         let addr = self.reg.get_reg(inst.rs1) as i64 + imm;
         self.check_pmp(addr as u64, PMPPerm::R);
 
@@ -1225,7 +1226,8 @@ impl Cpu {
 
     /// M[x[rs1] + sext(offset)] = x[rs2][63:0]
     fn sd(&mut self, inst: &Instruction) {
-        let addr = self.reg.get_reg(inst.rs1) as i64 + inst.imm as i64;
+        let imm = to_sign64(inst.imm as u64, 0x800);
+        let addr = self.reg.get_reg(inst.rs1) as i64 + imm;
         self.check_pmp(addr as u64, PMPPerm::W);
 
         let v = self.reg.get_reg(inst.rs2);
@@ -1239,7 +1241,8 @@ impl Cpu {
 
     /// x[rd] = sext((x[rs1] + sext(immediate))[31:0])
     fn addiw(&mut self, inst: &Instruction) {
-        let v = self.reg.get_reg(inst.rs1) as i64 + inst.imm as i64;
+        let imm = to_sign64(inst.imm as u64, 0x800);
+        let v = self.reg.get_reg(inst.rs1) as i64 + imm;
         self.reg.set_reg(inst.rd, v as i32 as u64);
     }
 
