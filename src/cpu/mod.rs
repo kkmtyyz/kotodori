@@ -387,7 +387,7 @@ impl Cpu {
 
     /// x[rd] = pc+4; pc += sext(offset)
     fn jal(&mut self, inst: &Instruction) {
-        let imm = b20_to_sign64(inst.imm);
+        let imm = sext(inst.imm as u64, 0x8_0000);
         self.reg.set_reg(inst.rd, self.reg.pc + 4);
         let v = self.reg.pc as i64 + imm;
         self.reg.pc = v as u64;
@@ -397,7 +397,7 @@ impl Cpu {
     fn jalr(&mut self, inst: &Instruction) {
         let t = self.reg.pc + 4;
 
-        let imm = b12_to_sign64(inst.imm);
+        let imm = sext(inst.imm as u64, 0x800);
         let v = (self.reg.get_reg(inst.rs1) as i64 + imm) as u64;
         self.reg.pc = v & !1;
 
@@ -407,7 +407,7 @@ impl Cpu {
     /// if (rs1 == rs2) pc += sext(offset)
     fn beq(&mut self, inst: &Instruction) {
         if self.reg.get_reg(inst.rs1) == self.reg.get_reg(inst.rs2) {
-            let imm = b12_to_sign64(inst.imm);
+            let imm = sext(inst.imm as u64, 0x800);
             self.reg.pc = (self.reg.pc as i64 + imm) as u64;
         }
     }
@@ -415,7 +415,7 @@ impl Cpu {
     /// if (rs1 != rs2) pc += sext(offset)
     fn bne(&mut self, inst: &Instruction) {
         if self.reg.get_reg(inst.rs1) != self.reg.get_reg(inst.rs2) {
-            let imm = b12_to_sign64(inst.imm);
+            let imm = sext(inst.imm as u64, 0x800);
             self.reg.pc = (self.reg.pc as i64 + imm) as u64;
         }
     }
@@ -423,7 +423,7 @@ impl Cpu {
     /// if (rs1 <s rs2) pc += sext(offset)
     fn blt(&mut self, inst: &Instruction) {
         if (self.reg.get_reg(inst.rs1) as i64) < (self.reg.get_reg(inst.rs2) as i64) {
-            let imm = b12_to_sign64(inst.imm);
+            let imm = sext(inst.imm as u64, 0x800);
             self.reg.pc = (self.reg.pc as i64 + imm) as u64;
         }
     }
@@ -431,7 +431,7 @@ impl Cpu {
     /// if (rs1 >=s rs2) pc += sext(offset)
     fn bge(&mut self, inst: &Instruction) {
         if (self.reg.get_reg(inst.rs1) as i64) >= (self.reg.get_reg(inst.rs2) as i64) {
-            let imm = b12_to_sign64(inst.imm);
+            let imm = sext(inst.imm as u64, 0x800);
             self.reg.pc = (self.reg.pc as i64 + imm) as u64;
         }
     }
@@ -439,7 +439,7 @@ impl Cpu {
     /// if (rs1 >u rs2) pc += sext(offset)
     fn bltu(&mut self, inst: &Instruction) {
         if self.reg.get_reg(inst.rs1) < self.reg.get_reg(inst.rs2) {
-            let imm = b12_to_sign64(inst.imm);
+            let imm = sext(inst.imm as u64, 0x800);
             self.reg.pc = (self.reg.pc as i64 + imm) as u64;
         }
     }
@@ -447,7 +447,7 @@ impl Cpu {
     /// if (rs1 >=u rs2) pc += sext(offset)
     fn bgeu(&mut self, inst: &Instruction) {
         if self.reg.get_reg(inst.rs1) >= self.reg.get_reg(inst.rs2) {
-            let imm = b12_to_sign64(inst.imm);
+            let imm = sext(inst.imm as u64, 0x800);
             self.reg.pc = (self.reg.pc as i64 + imm) as u64;
         }
     }
@@ -571,14 +571,14 @@ impl Cpu {
 
     /// x[rd] = x[rs1] + sext(immediate)
     fn addi(&mut self, inst: &Instruction) {
-        let imm = b12_to_sign64(inst.imm);
+        let imm = sext(inst.imm as u64, 0x800);
         let v = self.reg.get_reg(inst.rs1) as i64 + imm;
         self.reg.set_reg(inst.rd, v as u64);
     }
 
     /// x[rd] = x[rs1] <s sext(immediate)
     fn slti(&mut self, inst: &Instruction) {
-        let imm = to_sign64(inst.imm as u64, 0x800);
+        let imm = sext(inst.imm as u64, 0x800);
         if (self.reg.get_reg(inst.rs1) as i64) < imm {
             self.reg.set_reg(inst.rd, 1);
         } else {
@@ -588,7 +588,7 @@ impl Cpu {
 
     /// x[rd] = x[rs1] <u sext(immediate)
     fn sltiu(&mut self, inst: &Instruction) {
-        let imm = to_sign64(inst.imm as u64, 0x800);
+        let imm = sext(inst.imm as u64, 0x800);
         if self.reg.get_reg(inst.rs1) < imm as u64 {
             self.reg.set_reg(inst.rd, 1);
         } else {
@@ -598,21 +598,21 @@ impl Cpu {
 
     /// x[rd] = x[rs1] ^ sext(immediate)
     fn xori(&mut self, inst: &Instruction) {
-        let imm = to_sign64(inst.imm as u64, 0x800);
+        let imm = sext(inst.imm as u64, 0x800);
         let v = imm ^ (self.reg.get_reg(inst.rs1) as i64);
         self.reg.set_reg(inst.rd, v as u64);
     }
 
     /// x[rd] = x[rs1] | sext(immediate)
     fn ori(&mut self, inst: &Instruction) {
-        let imm = b12_to_sign64(inst.imm);
+        let imm = sext(inst.imm as u64, 0x800);
         let v = imm | (self.reg.get_reg(inst.rs1) as i64);
         self.reg.set_reg(inst.rd, v as u64);
     }
 
     /// x[rd] = x[rs1] & sext(immediate)
     fn andi(&mut self, inst: &Instruction) {
-        let imm = b12_to_sign64(inst.imm);
+        let imm = sext(inst.imm as u64, 0x800);
         let v = imm & (self.reg.get_reg(inst.rs1) as i64);
         self.reg.set_reg(inst.rd, v as u64);
     }
@@ -1194,7 +1194,7 @@ impl Cpu {
 
     /// x[rd] = M[x[rs1] + sext(offset)][31:0]
     fn lwu(&mut self, inst: &Instruction) {
-        let imm = to_sign64(inst.imm as u64, 0x800);
+        let imm = sext(inst.imm as u64, 0x800);
         let addr = self.reg.get_reg(inst.rs1) as i64 + imm;
         self.check_pmp(addr as u64, PMPPerm::R);
 
@@ -1210,7 +1210,7 @@ impl Cpu {
 
     /// x[rd] = M[x[rs1] + sext(offset)][63:0]
     fn ld(&mut self, inst: &Instruction) {
-        let imm = to_sign64(inst.imm as u64, 0x800);
+        let imm = sext(inst.imm as u64, 0x800);
         let addr = self.reg.get_reg(inst.rs1) as i64 + imm;
         self.check_pmp(addr as u64, PMPPerm::R);
 
@@ -1226,7 +1226,7 @@ impl Cpu {
 
     /// M[x[rs1] + sext(offset)] = x[rs2][63:0]
     fn sd(&mut self, inst: &Instruction) {
-        let imm = to_sign64(inst.imm as u64, 0x800);
+        let imm = sext(inst.imm as u64, 0x800);
         let addr = self.reg.get_reg(inst.rs1) as i64 + imm;
         self.check_pmp(addr as u64, PMPPerm::W);
 
@@ -1241,7 +1241,7 @@ impl Cpu {
 
     /// x[rd] = sext((x[rs1] + sext(immediate))[31:0])
     fn addiw(&mut self, inst: &Instruction) {
-        let imm = to_sign64(inst.imm as u64, 0x800);
+        let imm = sext(inst.imm as u64, 0x800);
         let v = self.reg.get_reg(inst.rs1) as i64 + imm;
         self.reg.set_reg(inst.rd, v as i32 as u64);
     }
@@ -1485,9 +1485,9 @@ impl Cpu {
 /// ```ignore
 /// let imm = 0xAD; // 0b1010_1101
 /// let sign_bit = 0x80; // 0b1000_0000
-/// assert_eq!(0xFFFF_FFFF_FFFF_FFAD, cpu::to_sign64(imm, sign_bit));
+/// assert_eq!(0xFFFF_FFFF_FFFF_FFAD, cpu::sext(imm, sign_bit));
 /// ```
-fn to_sign64(imm: u64, sign_bit: u64) -> i64 {
+fn sext(imm: u64, sign_bit: u64) -> i64 {
     if sign_bit & imm == 0 {
         return imm as i64;
     }
@@ -1504,24 +1504,4 @@ fn to_sign64(imm: u64, sign_bit: u64) -> i64 {
     }
 
     (imm | !sign) as i64
-}
-
-/// Sign-extended when imm is negative. (imm is 12bit)
-fn b12_to_sign64(imm: u32) -> i64 {
-    if 0x800 & imm == 0x800 {
-        return (imm as u64 | 0xFFFF_FFFF_FFFF_F000) as i64;
-    }
-    imm as i64
-}
-
-/// Sign-extended when imm is negative. (imm is 20bit)
-fn b20_to_sign64(imm: u32) -> i64 {
-    if 0x800 & imm == 0x800 {
-        return (imm as u64 | 0xFFFF_FFFF_FFFF_F000) as i64;
-    }
-
-    if 0x10_0000 & imm == 0x10_0000 {
-        return (imm as u64 | 0xFFFF_FFFF_FFE0_0000) as i64;
-    }
-    imm as i64
 }
