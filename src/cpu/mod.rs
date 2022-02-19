@@ -14,6 +14,13 @@ use std::io::{stdout, Write};
 const MTIME: u64 = 0x200_BFF8;
 const MTIMECMP: u64 = 0x200_4000;
 
+// paging
+const BARE: u64 = 0x00;
+const SV39: u64 = 0x08;
+const SV48: u64 = 0x09;
+const SV57: u64 = 0x10;
+const SV64: u64 = 0x11;
+
 #[derive(Debug, PartialEq)]
 pub enum Mode {
     M,
@@ -91,6 +98,33 @@ impl Cpu {
             MTIMECMP => self.mtimecmp = data,
             _ => self.bus.s_mm(addr, data),
         }
+    }
+
+    fn trans_addr(&self, addr: u64) -> u64 {
+        match self.reg.satp >> 60 {
+            BARE => addr,
+            SV39 => self.sv39(addr),
+            SV48 => self.sv48(addr),
+            SV57 => self.sv57(addr),
+            SV64 => self.sv64(addr),
+            _ => panic!("invalid satp mode"),
+        }
+    }
+
+    fn sv39(&self, _va: u64) -> u64 {
+        0
+    }
+
+    fn sv48(&self, _va: u64) -> u64 {
+        0
+    }
+
+    fn sv57(&self, _va: u64) -> u64 {
+        0
+    }
+
+    fn sv64(&self, _va: u64) -> u64 {
+        0
     }
 
     pub fn init(&mut self, entry_point: usize) {
@@ -171,7 +205,8 @@ impl Cpu {
 
     fn fetch(&self) -> u32 {
         self.check_pmp(self.reg.pc, PMPPerm::X);
-        self.bus.lw_dram(self.reg.pc - MEM_OFF as u64)
+        let addr = self.trans_addr(self.reg.pc);
+        self.bus.lw_dram(addr - MEM_OFF as u64)
     }
 
     fn check_pmp(&self, addr: u64, perm: PMPPerm) {
