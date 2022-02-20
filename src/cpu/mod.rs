@@ -20,6 +20,13 @@ const SV39: u64 = 0x08;
 const SV48: u64 = 0x09;
 const SV57: u64 = 0x10;
 const SV64: u64 = 0x11;
+const SATP_PPN: u64 = 0xFFF_FFFF_FFFF;
+const PAGE_OFF: u64 = 0xFFF;
+const VPN_SIZE: u64 = 9; // bit
+
+// Sv39
+const SV39_VPN: u64 = 0x7F_C000_0000;
+const SV39_PTE_PPN: u64 = 0x3F_FFFF_FFFF_FC00;
 
 #[derive(Debug, PartialEq)]
 pub enum Mode {
@@ -111,8 +118,35 @@ impl Cpu {
         }
     }
 
-    fn sv39(&self, _va: u64) -> u64 {
-        0
+    /// Sv39 virtual address
+    ///   30..38 -- 9 bits of level-2 index.
+    ///   21..29 -- 9 bits of level-1 index.
+    ///   12..20 -- 9 bits of level-0 index.
+    ///    0..11 -- 12 bits of byte offset within the page.
+    fn sv39(&self, va: u64) -> u64 {
+        let ppn = self.reg.satp & SATP_PPN;
+        let ppn = ppn << 12; // * 4096 (page size)
+        let vpn = (va & SV39_VPN) >> 30;
+        let vpn = vpn << 3; // * 8 (pte size)
+        let mut pte = self.bus.ld_dram(ppn + vpn - MEM_OFF as u64);
+
+        let mut vpn_shift = 21;
+        for i in 1..3 {
+            if pte & 0x1 == 0 {
+                panic!("page fault");
+            }
+            let ppn = pte & SV39_PTE_PPN;
+            let ppn = ppn << 2; // * 4096 (page size)
+            let vpn = (va & SV39_VPN >> (VPN_SIZE * i)) >> vpn_shift;
+            let vpn = vpn << 3; // * 8 (pte size)
+            pte = self.bus.ld_dram(ppn + vpn - MEM_OFF as u64);
+            vpn_shift -= VPN_SIZE;
+        }
+
+        let ppn = pte & SV39_PTE_PPN;
+        let ppn = ppn << 2; // * 4096 (page size)
+        let pa = ppn + (va & PAGE_OFF);
+        pa
     }
 
     fn sv48(&self, _va: u64) -> u64 {
