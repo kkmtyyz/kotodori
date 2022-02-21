@@ -238,8 +238,8 @@ impl Cpu {
     }
 
     fn fetch(&self) -> u32 {
-        self.check_pmp(self.reg.pc, PMPPerm::X);
         let addr = self.trans_addr(self.reg.pc);
+        self.check_pmp(addr, PMPPerm::X);
         self.bus.lw_dram(addr - MEM_OFF as u64)
     }
 
@@ -524,13 +524,14 @@ impl Cpu {
     /// x[rd] = sext(M[x[rs1] + sext(offset)][7:0])
     fn lb(&mut self, inst: &Instruction) {
         let addr = self.reg.get_reg(inst.rs1) as i64 + inst.imm as i64;
+        let addr = self.trans_addr(addr as u64);
         self.check_pmp(addr as u64, PMPPerm::R);
 
         let v: i64;
         if (addr as usize) < MEM_OFF {
             v = self.l_mm(addr as u64) as u8 as i64;
         } else {
-            let addr = (addr - MEM_OFF as i64) as u64;
+            let addr = (addr as i64 - MEM_OFF as i64) as u64;
             v = self.bus.lb_dram(addr) as i64;
         }
         self.reg.set_reg(inst.rd, v as u64);
@@ -539,13 +540,14 @@ impl Cpu {
     /// x[rd] = sext(M[x[rs1] + sext(offset)][15:0])
     fn lh(&mut self, inst: &Instruction) {
         let addr = self.reg.get_reg(inst.rs1) as i64 + inst.imm as i64;
+        let addr = self.trans_addr(addr as u64);
         self.check_pmp(addr as u64, PMPPerm::R);
 
         let v: i64;
         if (addr as usize) < MEM_OFF {
             v = self.l_mm(addr as u64) as u16 as i64;
         } else {
-            let addr = (addr - MEM_OFF as i64) as u64;
+            let addr = (addr as i64 - MEM_OFF as i64) as u64;
             v = self.bus.lh_dram(addr) as i64;
         }
         self.reg.set_reg(inst.rd, v as u64);
@@ -554,13 +556,14 @@ impl Cpu {
     /// x[rd] = sext(M[x[rs1] + sext(offset)][31:0])
     fn lw(&mut self, inst: &Instruction) {
         let addr = self.reg.get_reg(inst.rs1) as i64 + inst.imm as i64;
+        let addr = self.trans_addr(addr as u64);
         self.check_pmp(addr as u64, PMPPerm::R);
 
         let v: i64;
         if (addr as usize) < MEM_OFF {
             v = self.l_mm(addr as u64) as u32 as i64;
         } else {
-            let addr = (addr - MEM_OFF as i64) as u64;
+            let addr = (addr as i64 - MEM_OFF as i64) as u64;
             v = self.bus.lw_dram(addr as u64) as i64;
         }
         self.reg.set_reg(inst.rd, v as u64);
@@ -569,13 +572,14 @@ impl Cpu {
     /// x[rd] = M[x[rs1] + sext(offset)][7:0]
     fn lbu(&mut self, inst: &Instruction) {
         let addr = self.reg.get_reg(inst.rs1) as i64 + inst.imm as i64;
+        let addr = self.trans_addr(addr as u64);
         self.check_pmp(addr as u64, PMPPerm::R);
 
         let v: u64;
         if (addr as usize) < MEM_OFF {
             v = self.l_mm(addr as u64) as u8 as u64;
         } else {
-            let addr = (addr - MEM_OFF as i64) as u64;
+            let addr = (addr as i64 - MEM_OFF as i64) as u64;
             v = self.bus.lb_dram(addr as u64) as u64;
         }
         self.reg.set_reg(inst.rd, v);
@@ -584,13 +588,14 @@ impl Cpu {
     /// x[rd] = M[x[rs1] + sext(offset)][15:0]
     fn lhu(&mut self, inst: &Instruction) {
         let addr = self.reg.get_reg(inst.rs1) as i64 + inst.imm as i64;
+        let addr = self.trans_addr(addr as u64);
         self.check_pmp(addr as u64, PMPPerm::R);
 
         let v: u64;
         if (addr as usize) < MEM_OFF {
             v = self.l_mm(addr as u64) as u16 as u64;
         } else {
-            let addr = (addr - MEM_OFF as i64) as u64;
+            let addr = (addr as i64 - MEM_OFF as i64) as u64;
             v = self.bus.lh_dram(addr as u64) as u64;
         }
         self.reg.set_reg(inst.rd, v);
@@ -599,13 +604,14 @@ impl Cpu {
     /// M[x[rs1] + sext(offset)] = x[rs2][7:0]
     fn sb(&mut self, inst: &Instruction) {
         let addr = self.reg.get_reg(inst.rs1) as i64 + inst.imm as i64;
+        let addr = self.trans_addr(addr as u64);
         self.check_pmp(addr as u64, PMPPerm::W);
 
         let v = self.reg.get_reg(inst.rs2) as u8;
         if (addr as usize) < MEM_OFF {
             self.s_mm(addr as u64, v as u64);
         } else {
-            let addr = (addr - MEM_OFF as i64) as u64;
+            let addr = (addr as i64 - MEM_OFF as i64) as u64;
             self.bus.sb_dram(addr as u64, v);
         }
     }
@@ -613,13 +619,14 @@ impl Cpu {
     /// M[x[rs1] + sext(offset)] = x[rs2][15:0]
     fn sh(&mut self, inst: &Instruction) {
         let addr = self.reg.get_reg(inst.rs1) as i64 + inst.imm as i64;
+        let addr = self.trans_addr(addr as u64);
         self.check_pmp(addr as u64, PMPPerm::W);
 
         let v = self.reg.get_reg(inst.rs2) as u16;
         if (addr as usize) < MEM_OFF {
             self.s_mm(addr as u64, v as u64);
         } else {
-            let addr = (addr - MEM_OFF as i64) as u64;
+            let addr = (addr as i64 - MEM_OFF as i64) as u64;
             self.bus.sh_dram(addr as u64, v);
         }
     }
@@ -627,13 +634,14 @@ impl Cpu {
     /// M[x[rs1] + sext(offset)] = x[rs2][31:0]
     fn sw(&mut self, inst: &Instruction) {
         let addr = self.reg.get_reg(inst.rs1) as i64 + inst.imm as i64;
+        let addr = self.trans_addr(addr as u64);
         self.check_pmp(addr as u64, PMPPerm::W);
 
         let v = self.reg.get_reg(inst.rs2) as u32;
         if (addr as usize) < MEM_OFF {
             self.s_mm(addr as u64, v as u64);
         } else {
-            let addr = (addr - MEM_OFF as i64) as u64;
+            let addr = (addr as i64 - MEM_OFF as i64) as u64;
             self.bus.sw_dram(addr as u64, v);
         }
     }
@@ -959,6 +967,7 @@ impl Cpu {
     /// x[rd] = LoadReserved32(M[x[rs1]])
     fn lr_w(&mut self, inst: &Instruction) {
         let addr = self.reg.get_reg(inst.rs1);
+        let addr = self.trans_addr(addr);
         self.check_pmp(addr, PMPPerm::R);
 
         let data = self.bus.lw_dram(addr) as i64;
@@ -987,6 +996,7 @@ impl Cpu {
 
     fn sc_w(&mut self, inst: &Instruction) {
         let addr = self.reg.get_reg(inst.rs1);
+        let addr = self.trans_addr(addr);
         self.check_pmp(addr, PMPPerm::W);
 
         self.invalidate_mem_reservation(addr, false);
@@ -1035,7 +1045,8 @@ impl Cpu {
 
     /// x[rd] = AMO32(M[x[rs1]] SWAP x[rs2])
     fn amoswap_w(&mut self, inst: &Instruction) {
-        let mut addr = self.reg.get_reg(inst.rs1);
+        let addr = self.reg.get_reg(inst.rs1);
+        let mut addr = self.trans_addr(addr);
         self.check_pmp(addr, PMPPerm::W);
 
         let mm = if (addr as usize) < MEM_OFF {
@@ -1063,7 +1074,8 @@ impl Cpu {
 
     /// x[rd] = AMO32(M[x[rs1]] + x[rs2])
     fn amoadd_w(&mut self, inst: &Instruction) {
-        let mut addr = self.reg.get_reg(inst.rs1);
+        let addr = self.reg.get_reg(inst.rs1);
+        let mut addr = self.trans_addr(addr);
         self.check_pmp(addr, PMPPerm::W);
 
         let mm = if (addr as usize) < MEM_OFF {
@@ -1086,7 +1098,8 @@ impl Cpu {
 
     /// x[rd] = AMO32(M[x[rs1]] ^ x[rs2])
     fn amoxor_w(&mut self, inst: &Instruction) {
-        let mut addr = self.reg.get_reg(inst.rs1);
+        let addr = self.reg.get_reg(inst.rs1);
+        let mut addr = self.trans_addr(addr);
         self.check_pmp(addr, PMPPerm::W);
 
         let mm = if (addr as usize) < MEM_OFF {
@@ -1109,7 +1122,8 @@ impl Cpu {
 
     /// x[rd] = AMO32(M[x[rs1]] & x[rs2])
     fn amoand_w(&mut self, inst: &Instruction) {
-        let mut addr = self.reg.get_reg(inst.rs1);
+        let addr = self.reg.get_reg(inst.rs1);
+        let mut addr = self.trans_addr(addr);
         self.check_pmp(addr, PMPPerm::W);
 
         let mm = if (addr as usize) < MEM_OFF {
@@ -1132,7 +1146,8 @@ impl Cpu {
 
     /// x[rd] = AMO32(M[x[rs1]] | x[rs2])
     fn amoor_w(&mut self, inst: &Instruction) {
-        let mut addr = self.reg.get_reg(inst.rs1);
+        let addr = self.reg.get_reg(inst.rs1);
+        let mut addr = self.trans_addr(addr);
         self.check_pmp(addr, PMPPerm::W);
 
         let mm = if (addr as usize) < MEM_OFF {
@@ -1155,7 +1170,8 @@ impl Cpu {
 
     /// x[rd] = AMO32(M[x[rs1]] MIN x[rs2])
     fn amomin_w(&mut self, inst: &Instruction) {
-        let mut addr = self.reg.get_reg(inst.rs1);
+        let addr = self.reg.get_reg(inst.rs1);
+        let mut addr = self.trans_addr(addr);
         self.check_pmp(addr, PMPPerm::W);
 
         let mm = if (addr as usize) < MEM_OFF {
@@ -1182,7 +1198,8 @@ impl Cpu {
 
     /// x[rd] = AMO32(M[x[rs1]] MAX x[rs2])
     fn amomax_w(&mut self, inst: &Instruction) {
-        let mut addr = self.reg.get_reg(inst.rs1);
+        let addr = self.reg.get_reg(inst.rs1);
+        let mut addr = self.trans_addr(addr);
         self.check_pmp(addr, PMPPerm::W);
 
         let mm = if (addr as usize) < MEM_OFF {
@@ -1209,7 +1226,8 @@ impl Cpu {
 
     /// x[rd] = AMO32(M[x[rs1]] MINU x[rs2])
     fn amominu_w(&mut self, inst: &Instruction) {
-        let mut addr = self.reg.get_reg(inst.rs1);
+        let addr = self.reg.get_reg(inst.rs1);
+        let mut addr = self.trans_addr(addr);
         self.check_pmp(addr, PMPPerm::W);
 
         let mm = if (addr as usize) < MEM_OFF {
@@ -1236,7 +1254,8 @@ impl Cpu {
 
     /// x[rd] = AMO32(M[x[rs1]] MAXU x[rs2])
     fn amomaxu_w(&mut self, inst: &Instruction) {
-        let mut addr = self.reg.get_reg(inst.rs1);
+        let addr = self.reg.get_reg(inst.rs1);
+        let mut addr = self.trans_addr(addr);
         self.check_pmp(addr, PMPPerm::W);
 
         let mm = if (addr as usize) < MEM_OFF {
@@ -1265,13 +1284,14 @@ impl Cpu {
     fn lwu(&mut self, inst: &Instruction) {
         let imm = sext(inst.imm as u64, 0x800);
         let addr = self.reg.get_reg(inst.rs1) as i64 + imm;
+        let addr = self.trans_addr(addr as u64);
         self.check_pmp(addr as u64, PMPPerm::R);
 
         let v: u64;
         if (addr as usize) < MEM_OFF {
             v = self.l_mm(addr as u64) as u32 as u64;
         } else {
-            let addr = (addr - MEM_OFF as i64) as u64;
+            let addr = (addr as i64 - MEM_OFF as i64) as u64;
             v = self.bus.lw_dram(addr as u64) as u64;
         }
         self.reg.set_reg(inst.rd, v);
@@ -1281,13 +1301,14 @@ impl Cpu {
     fn ld(&mut self, inst: &Instruction) {
         let imm = sext(inst.imm as u64, 0x800);
         let addr = self.reg.get_reg(inst.rs1) as i64 + imm;
+        let addr = self.trans_addr(addr as u64);
         self.check_pmp(addr as u64, PMPPerm::R);
 
         let v: u64;
         if (addr as usize) < MEM_OFF {
             v = self.l_mm(addr as u64);
         } else {
-            let addr = (addr - MEM_OFF as i64) as u64;
+            let addr = (addr as i64 - MEM_OFF as i64) as u64;
             v = self.bus.ld_dram(addr as u64);
         }
         self.reg.set_reg(inst.rd, v);
@@ -1297,13 +1318,14 @@ impl Cpu {
     fn sd(&mut self, inst: &Instruction) {
         let imm = sext(inst.imm as u64, 0x800);
         let addr = self.reg.get_reg(inst.rs1) as i64 + imm;
+        let addr = self.trans_addr(addr as u64);
         self.check_pmp(addr as u64, PMPPerm::W);
 
         let v = self.reg.get_reg(inst.rs2);
         if (addr as usize) < MEM_OFF {
             self.s_mm(addr as u64, v);
         } else {
-            let addr = (addr - MEM_OFF as i64) as u64;
+            let addr = (addr as i64 - MEM_OFF as i64) as u64;
             self.bus.sd_dram(addr as u64, v);
         }
     }
@@ -1414,6 +1436,7 @@ impl Cpu {
     /// x[rd] = LoadReserved64(M[x[rs1]])
     fn lr_d(&mut self, inst: &Instruction) {
         let addr = self.reg.get_reg(inst.rs1);
+        let addr = self.trans_addr(addr);
         self.check_pmp(addr, PMPPerm::R);
 
         let data = self.bus.ld_dram(addr);
@@ -1424,6 +1447,7 @@ impl Cpu {
     /// x[rd] = StoreConditional64(M[x[rs1]], x[rs2])
     fn sc_d(&mut self, inst: &Instruction) {
         let addr = self.reg.get_reg(inst.rs1);
+        let addr = self.trans_addr(addr);
         self.check_pmp(addr, PMPPerm::W);
         self.invalidate_mem_reservation(addr, true);
 
@@ -1440,6 +1464,7 @@ impl Cpu {
     /// x[rd] = AMO64(M[x[rs1]] SWAP x[rs2])
     fn amoswap_d(&mut self, inst: &Instruction) {
         let addr = self.reg.get_reg(inst.rs1);
+        let addr = self.trans_addr(addr);
         self.check_pmp(addr, PMPPerm::W);
 
         let data = self.bus.ld_dram(addr);
@@ -1451,6 +1476,7 @@ impl Cpu {
     /// x[rd] = AMO64(M[x[rs1]] + x[rs2])
     fn amoadd_d(&mut self, inst: &Instruction) {
         let addr = self.reg.get_reg(inst.rs1);
+        let addr = self.trans_addr(addr);
         self.check_pmp(addr, PMPPerm::W);
 
         let mut data = self.bus.ld_dram(addr);
@@ -1462,6 +1488,7 @@ impl Cpu {
     /// x[rd] = AMO64(M[x[rs1]] ^ x[rs2])
     fn amoxor_d(&mut self, inst: &Instruction) {
         let addr = self.reg.get_reg(inst.rs1);
+        let addr = self.trans_addr(addr);
         self.check_pmp(addr, PMPPerm::W);
 
         let mut data = self.bus.ld_dram(addr);
@@ -1473,6 +1500,7 @@ impl Cpu {
     /// x[rd] = AMO64(M[x[rs1]] & x[rs2])
     fn amoand_d(&mut self, inst: &Instruction) {
         let addr = self.reg.get_reg(inst.rs1);
+        let addr = self.trans_addr(addr);
         self.check_pmp(addr, PMPPerm::W);
 
         let mut data = self.bus.ld_dram(addr);
@@ -1484,6 +1512,7 @@ impl Cpu {
     /// x[rd] = AMO64(M[x[rs1]] | x[rs2])
     fn amoor_d(&mut self, inst: &Instruction) {
         let addr = self.reg.get_reg(inst.rs1);
+        let addr = self.trans_addr(addr);
         self.check_pmp(addr, PMPPerm::W);
 
         let mut data = self.bus.ld_dram(addr);
@@ -1495,6 +1524,7 @@ impl Cpu {
     /// x[rd] = AMO64(M[x[rs1]] MIN x[rs2])
     fn amomin_d(&mut self, inst: &Instruction) {
         let addr = self.reg.get_reg(inst.rs1);
+        let addr = self.trans_addr(addr);
         self.check_pmp(addr, PMPPerm::W);
 
         let data = self.bus.ld_dram(addr);
@@ -1509,6 +1539,7 @@ impl Cpu {
     /// x[rd] = AMO64(M[x[rs1]] MAX x[rs2])
     fn amomax_d(&mut self, inst: &Instruction) {
         let addr = self.reg.get_reg(inst.rs1);
+        let addr = self.trans_addr(addr);
         self.check_pmp(addr, PMPPerm::W);
 
         let data = self.bus.ld_dram(addr);
@@ -1523,6 +1554,7 @@ impl Cpu {
     /// x[rd] = AMO64(M[x[rs1]] MINU x[rs2])
     fn amominu_d(&mut self, inst: &Instruction) {
         let addr = self.reg.get_reg(inst.rs1);
+        let addr = self.trans_addr(addr);
         self.check_pmp(addr, PMPPerm::W);
 
         let data = self.bus.ld_dram(addr);
@@ -1537,6 +1569,7 @@ impl Cpu {
     /// x[rd] = AMO64(M[x[rs1]] MAXU x[rs2])
     fn amomaxu_d(&mut self, inst: &Instruction) {
         let addr = self.reg.get_reg(inst.rs1);
+        let addr = self.trans_addr(addr);
         self.check_pmp(addr, PMPPerm::W);
 
         let data = self.bus.ld_dram(addr);
