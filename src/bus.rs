@@ -69,7 +69,7 @@ impl Bus {
         match addr {
             uart::UART..=uart::UART_END => self.uart.read(addr),
             plic::PLIC..=plic::PLIC_END => self.plic.read(addr),
-            _ => panic!("invalid memory mapped address"),
+            _ => panic!("invalid memory mapped address: 0x{:016X}", addr),
         }
     }
 

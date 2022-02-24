@@ -35,6 +35,10 @@ impl Plic {
     }
 
     pub fn read(&self, addr: u64) -> u64 {
+        if addr % 4 != 0 {
+            panic!("invalid reading PLIC address: 0x{:016X}", addr);
+        }
+
         match addr {
             PRIORITY..=PRIORITY_END => self.read_priority(addr),
             PENDING..=PENDING_END => self.read_pending(addr),
@@ -47,29 +51,102 @@ impl Plic {
                 }
                 return self.read_claim(addr);
             }
-            _ => panic!("invalid PLIC address: 0x{:016X}", addr),
+            _ => panic!("invalid reading PLIC address: 0x{:016X}", addr),
         }
     }
 
     fn read_priority(&self, addr: u64) -> u64 {
-        0
+        let addr = addr - PRIORITY;
+        *self.priority.get(addr as usize).unwrap() as u64
     }
 
     fn read_pending(&self, addr: u64) -> u64 {
-        0
+        let addr = addr - PENDING;
+        *self.pending.get(addr as usize).unwrap() as u64
     }
 
     fn read_enable(&self, addr: u64) -> u64 {
-        0
+        let addr = addr - ENABLE;
+        *self.enable.get(addr as usize).unwrap() as u64
     }
 
     fn read_priority_thr(&self, addr: u64) -> u64 {
-        0
+        if CLAIM0 < addr && addr < PRIORITY_THR {
+            panic!("invalid reading PLIC priority thr address: 0x{:016X}", addr);
+        }
+        if addr == PRIORITY_THR0 {
+            return *self.priority_thr.get(0).unwrap() as u64;
+        }
+        let addr = addr - PRIORITY_THR;
+        *self.priority_thr.get(addr as usize).unwrap() as u64
     }
 
     fn read_claim(&self, addr: u64) -> u64 {
-        0
+        if CLAIM0 < addr && addr < PRIORITY_THR {
+            panic!("invalid reading PLIC claim address: 0x{:016X}", addr);
+        }
+        if addr == CLAIM0 {
+            return *self.priority_thr.get(0).unwrap() as u64;
+        }
+        let addr = addr - CLAIM;
+        *self.priority_thr.get(addr as usize).unwrap() as u64
     }
 
-    pub fn write(&mut self, addr: u64, data: u64) {}
+    pub fn write(&mut self, addr: u64, data: u64) {
+        if addr % 4 != 0 {
+            panic!("invalid writing PLIC address: 0x{:016X}", addr);
+        }
+
+        match addr {
+            PRIORITY..=PRIORITY_END => self.write_priority(addr, data as u32),
+            PENDING..=PENDING_END => self.write_pending(addr, data as u32),
+            ENABLE..=ENABLE_END => self.write_enable(addr, data as u32),
+            PRIORITY_THR0 => self.write_priority_thr(addr, data as u32),
+            CLAIM0 => self.write_claim(addr, data as u32),
+            PRIORITY_THR..=CLAIM_END => {
+                if addr & 0xF == 0x0 || addr & 0xF == 0x8 {
+                    return self.write_priority_thr(addr, data as u32);
+                }
+                return self.write_claim(addr, data as u32);
+            }
+            _ => panic!("invalid writing PLIC address: 0x{:016X}", addr),
+        }
+    }
+
+    fn write_priority(&mut self, addr: u64, data: u32) {
+        let addr = addr - PRIORITY;
+        self.priority[addr as usize] = data;
+    }
+
+    fn write_pending(&mut self, addr: u64, data: u32) {
+        let addr = addr - PENDING;
+        self.pending[addr as usize] = data;
+    }
+
+    fn write_enable(&mut self, addr: u64, data: u32) {
+        let addr = addr - ENABLE;
+        self.enable[addr as usize] = data;
+    }
+
+    fn write_priority_thr(&mut self, addr: u64, data: u32) {
+        if CLAIM0 < addr && addr < PRIORITY_THR {
+            panic!("invalid writing PLIC priority thr address: 0x{:016X}", addr);
+        }
+        if addr == PRIORITY_THR0 {
+            self.priority_thr[0] = data;
+        }
+        let addr = addr - PRIORITY_THR;
+        self.priority_thr[addr as usize] = data;
+    }
+
+    fn write_claim(&mut self, addr: u64, data: u32) {
+        if CLAIM0 < addr && addr < PRIORITY_THR {
+            panic!("invalid writing PLIC claim address: 0x{:016X}", addr);
+        }
+        if addr == CLAIM0 {
+            self.priority_thr[0] = data;
+        }
+        let addr = addr - CLAIM;
+        self.priority_thr[addr as usize] = data;
+    }
 }
