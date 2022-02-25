@@ -1,6 +1,7 @@
 use crate::dram::Dram;
 use crate::plic::{self, Plic};
 use crate::uart::{self, Uart};
+use crate::virtio::{self, Virtio};
 
 #[derive(Debug)]
 #[allow(dead_code)]
@@ -11,10 +12,11 @@ pub struct Bus {
     dram: Dram,
     uart: Uart,
     plic: Plic,
+    virtio: Virtio,
 }
 
 impl Bus {
-    pub fn new(dram: Dram, uart: Uart, plic: Plic) -> Bus {
+    pub fn new(dram: Dram, uart: Uart, plic: Plic, virtio: Virtio) -> Bus {
         Bus {
             address: 0,
             data: 0,
@@ -22,6 +24,7 @@ impl Bus {
             dram,
             uart,
             plic,
+            virtio,
         }
     }
 
@@ -69,6 +72,7 @@ impl Bus {
         match addr {
             uart::UART..=uart::UART_END => self.uart.read(addr),
             plic::PLIC..=plic::PLIC_END => self.plic.read(addr),
+            virtio::VIRTIO..=virtio::VIRTIO_END => self.virtio.read(addr),
             _ => panic!("invalid memory mapped address: 0x{:016X}", addr),
         }
     }
@@ -77,6 +81,7 @@ impl Bus {
         match addr {
             uart::UART..=uart::UART_END => self.uart.write(addr, data),
             plic::PLIC..=plic::PLIC_END => self.plic.write(addr, data),
+            virtio::VIRTIO..=virtio::VIRTIO_END => self.virtio.write(addr, data),
             _ => panic!("invalid memory mapped address: 0x{:016X}", addr),
         }
     }

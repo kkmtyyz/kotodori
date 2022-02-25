@@ -9,6 +9,7 @@ use crate::cpu::Cpu;
 use crate::dram::Dram;
 use crate::plic::Plic;
 use crate::uart::Uart;
+use crate::virtio::Virtio;
 
 pub struct Emulator {
     cpu: Cpu,
@@ -26,7 +27,7 @@ impl Emulator {
             entry_point = Emulator::load_elf_to_dram(&mut dram, elf);
         }
 
-        let bus = Bus::new(dram, Uart::new(), Plic::new());
+        let bus = Bus::new(dram, Uart::new(), Plic::new(), Virtio::new());
 
         Emulator {
             cpu: Cpu::new(bus, cmd.mem_size.unwrap(), cmd.dbg.clone()),

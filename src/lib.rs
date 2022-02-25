@@ -8,3 +8,4 @@ pub mod emulator;
 mod plic;
 mod uart;
 mod util;
+mod virtio;
