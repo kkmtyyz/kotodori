@@ -1,4 +1,4 @@
-// $ cargo run --release -- --elf kernel/kernel
+// $ cargo run --release -- --elf kernel/kernel --drive kernel/fs.img
 // $ cargo run --release -- --elf kernel/kernel --debug
 
 use kotodori::cmd::Command;
