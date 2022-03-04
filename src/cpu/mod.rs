@@ -1564,13 +1564,25 @@ impl Cpu {
     /// x[rd] = AMO64(M[x[rs1]] | x[rs2])
     fn amoor_d(&mut self, inst: &Instruction) {
         let addr = self.reg.get_reg(inst.rs1);
-        let addr = self.trans_addr(addr);
+        let mut addr = self.trans_addr(addr);
         self.check_pmp(addr, PMPPerm::W);
 
-        let mut data = self.bus.ld_dram(addr);
-        self.reg.set_reg(inst.rd, data);
-        data |= self.reg.get_reg(inst.rs2);
+        let mm = if (addr as usize) < MEM_OFF {
+            true
+        } else {
+            false
+        };
+        let data: u64;
+        if mm {
+            data = self.l_mm(addr as u64);
+        } else {
+            addr = (addr as i64 - MEM_OFF as i64) as u64;
+            data = self.bus.ld_dram(addr as u64);
+        }
+
+        let data = data | self.reg.get_reg(inst.rs2);
         self.bus.sd_dram(addr, data);
+        self.reg.set_reg(inst.rd, data as i32 as i64 as u64);
     }
 
     /// x[rd] = AMO64(M[x[rs1]] MIN x[rs2])
