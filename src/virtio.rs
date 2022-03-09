@@ -5,25 +5,37 @@ pub const VIRTIO_MMIO_MAGIC_VALUE: u64 = VIRTIO + 0x000;
 pub const VIRTIO_MMIO_VERSION: u64 = VIRTIO + 0x004;
 pub const VIRTIO_MMIO_DEVICE_ID: u64 = VIRTIO + 0x008;
 pub const VIRTIO_MMIO_VENDOR_ID: u64 = VIRTIO + 0x00C;
+pub const VIRTIO_MMIO_DEVICE_FEATURES: u64 = VIRTIO + 0x010;
+pub const VIRTIO_MMIO_STATUS: u64 = VIRTIO + 0x070;
 pub const VIRTIO_END: u64 = 0x1000_1FFF;
 
 #[derive(Debug)]
-pub struct Virtio {}
+pub struct Virtio {
+    mmio_status: u64,
+}
 
 impl Virtio {
     pub fn new() -> Virtio {
-        Virtio {}
+        Virtio {
+            mmio_status: 0,
+        }
     }
 
     pub fn read(&self, addr: u64) -> u64 {
         match addr {
             VIRTIO_MMIO_MAGIC_VALUE => 0x7472_6976,
             VIRTIO_MMIO_VERSION => 0x1,
-            VIRTIO_MMIO_DEVICE_ID => 0x2,
+            VIRTIO_MMIO_DEVICE_ID => 0x2, // Block Device
             VIRTIO_MMIO_VENDOR_ID => 0x554d4551,
+            VIRTIO_MMIO_DEVICE_FEATURES => 0,
             _ => panic!("invalid read to virtio address"),
         }
     }
 
-    pub fn write(&mut self, addr: u64, data: u64) {}
+    pub fn write(&mut self, addr: u64, data: u64) {
+        match addr {
+            VIRTIO_MMIO_STATUS => self.mmio_status = data,
+            _ => panic!("invalid write to virtio address"),
+        }
+    }
 }
