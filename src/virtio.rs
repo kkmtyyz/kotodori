@@ -9,6 +9,7 @@ pub const VIRTIO_MMIO_DEVICE_FEATURES: u64 = VIRTIO + 0x010;
 pub const VIRTIO_MMIO_DRIVER_FEATURES: u64 = VIRTIO + 0x020;
 pub const VIRTIO_MMIO_GUEST_PAGE_SIZE: u64 = VIRTIO + 0x028;
 pub const VIRTIO_MMIO_QUEUE_SEL: u64 = VIRTIO + 0x030;
+pub const VIRTIO_MMIO_QUEUE_NUM_MAX: u64 = VIRTIO + 0x34;
 pub const VIRTIO_MMIO_STATUS: u64 = VIRTIO + 0x070;
 pub const VIRTIO_END: u64 = 0x1000_1FFF;
 
@@ -37,6 +38,7 @@ impl Virtio {
             VIRTIO_MMIO_DEVICE_ID => 0x2, // Block Device
             VIRTIO_MMIO_VENDOR_ID => 0x554d4551,
             VIRTIO_MMIO_DEVICE_FEATURES => 0,
+            VIRTIO_MMIO_QUEUE_NUM_MAX => 8,
             _ => panic!("invalid read to virtio address"),
         }
     }
