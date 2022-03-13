@@ -24,14 +24,16 @@ pub fn timer_int(reg: &mut Register, current_mode: &mut Mode, mtime: u64, mtimec
     }
 
     match current_mode {
-        Mode::S => {
-            reg.sip |= MIP_STIP;
-            reg.scause = 0x8000_0000_0000_0007; // timer interrupt
-        }
-        _ => {
-            // mode U or M
+        Mode::M => {
             reg.mip |= MIP_MTIP;
             reg.mcause = 0x8000_0000_0000_0007; // timer interrupt
+        }
+        Mode::S => {
+            reg.sip |= MIP_STIP;
+            reg.scause = 0x8000_0000_0000_0005; // timer interrupt
+        }
+        Mode::U => {
+            return;
         }
     }
     int(reg, current_mode);
@@ -44,6 +46,12 @@ pub fn int(reg: &mut Register, current_mode: &mut Mode) {
     if (*current_mode == Mode::S) && (reg.sstatus & SSTATUS_SIE == 0) {
         return;
     }
+
+    let pre_mode = match current_mode {
+        Mode::M => Mode::M,
+        Mode::S => Mode::S,
+        Mode::U => Mode::U,
+    };
 
     *current_mode = Mode::M;
 
@@ -59,12 +67,12 @@ pub fn int(reg: &mut Register, current_mode: &mut Mode) {
     match int_mode {
         Mode::M => {
             if reg.mideleg & int_code == 0 {
-                m_int(reg, current_mode, int_code);
+                m_int(reg, pre_mode, current_mode, int_code);
             } else {
-                s_int(reg, current_mode, int_code);
+                s_int(reg, pre_mode, current_mode, int_code);
             }
         }
-        Mode::S => s_int(reg, current_mode, int_code),
+        Mode::S => s_int(reg, pre_mode, current_mode, int_code),
         _ => (),
     }
 
@@ -140,25 +148,35 @@ fn is_disabled_int(reg: &Register, int_code: u64, int_mode: &Mode) -> bool {
     false
 }
 
-fn m_int(reg: &mut Register, current_mode: &mut Mode, _int_code: u64) {
+fn m_int(reg: &mut Register, pre_mode: Mode, current_mode: &mut Mode, _int_code: u64) {
     *current_mode = Mode::M;
 
     let mstatus_mie = (reg.mstatus & MSTATUS_MIE) >> 3;
     let mstatus_mpie = mstatus_mie << 7;
     reg.mstatus |= mstatus_mpie;
     reg.mstatus &= !MSTATUS_MIE;
+    match pre_mode {
+        Mode::M => reg.mstatus |= 0b1_1000_0000_0000,
+        Mode::S => reg.mstatus |= 0b0_1000_0000_0000,
+        Mode::U => reg.mstatus |= 0b0_0000_0000_0000,
+    }
 
     reg.mepc = reg.pc;
     reg.pc = reg.mtvec;
 }
 
-fn s_int(reg: &mut Register, current_mode: &mut Mode, _int_code: u64) {
+fn s_int(reg: &mut Register, pre_mode: Mode, current_mode: &mut Mode, _int_code: u64) {
     *current_mode = Mode::S;
 
     let sstatus_sie = (reg.sstatus & SSTATUS_SIE) >> 1;
     let sstatus_spie = sstatus_sie << 5;
     reg.sstatus |= sstatus_spie;
     reg.sstatus &= !SSTATUS_SIE;
+    match pre_mode {
+        Mode::S => reg.sstatus |= 0b1_0000_0000,
+        Mode::U => reg.sstatus |= 0b0_0000_0000,
+        _ => (),
+    }
 
     reg.sepc = reg.pc;
     reg.pc = reg.stvec;
