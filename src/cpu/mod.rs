@@ -1723,3 +1723,12 @@ fn sext(imm: u64, sign_bit: u64) -> i64 {
 
     (imm | !sign) as i64
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn lui_test() {
+    }
+}
