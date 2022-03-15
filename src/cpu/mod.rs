@@ -1727,8 +1727,23 @@ fn sext(imm: u64, sign_bit: u64) -> i64 {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::dram::Dram;
+    use crate::uart::Uart;
+    use crate::plic::Plic;
+    use crate::virtio::Virtio;
 
     #[test]
     fn lui_test() {
+        let dram = Dram::new(0);
+        let uart = Uart::new();
+        let plic = Plic::new();
+        let virtio = Virtio::new();
+        let bus = Bus::new(dram, uart, plic, virtio);
+        let dbg = Debug::new(false, 0);
+        let mut cpu = Cpu::new(bus, 0, dbg);
+        // lui	a0,0x1
+        let inst = Instruction::decode(0x0000_1537);
+        cpu.lui(&inst);
+        assert_eq!(cpu.reg.a0, 0x1000);
     }
 }
