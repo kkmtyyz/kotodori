@@ -1,1 +1,230 @@
 # kotodori
+
+RISC-V Emulator
+
+**WIP**
+
+1. clone xv6-riscv repository.
+```
+$ git clone https://github.com/mit-pdos/xv6-riscv.git
+$ cd xv6-riscv
+```
+
+2. remove debug option from the Makefile.
+```
+$ git diff
+diff --git a/Makefile b/Makefile
+index 328f9c6..bf887c4 100644
+--- a/Makefile
++++ b/Makefile
+@@ -56,7 +56,7 @@ LD = $(TOOLPREFIX)ld
+ OBJCOPY = $(TOOLPREFIX)objcopy
+ OBJDUMP = $(TOOLPREFIX)objdump
+ 
+-CFLAGS = -Wall -Werror -O -fno-omit-frame-pointer -ggdb
++CFLAGS = -Wall -Werror -O -fno-omit-frame-pointer
+ CFLAGS += -MD
+ CFLAGS += -mcmodel=medany
+ CFLAGS += -ffreestanding -fno-common -nostdlib -mno-relax
+```
+
+3. make xv6-riscv kernel and fs.img.
+```
+$ make
+...
+$ file kernel/kernel
+kernel/kernel: ELF 64-bit LSB executable, UCB RISC-V, version 1 (SYSV), statically linked, not stripped
+
+$ make fs.img
+$ file fs.img
+fs.img: data
+```
+
+4. copy kernel and fs.img to kotodori directory.
+```
+$ git clone https://github.com/kkmtyyz/kotodori.git
+$ mkdir kotodori/kernel
+$ cp xv6-riscv/kernel/kernel kotodori/kernel/.
+$ cp xv6-riscv/fs.img kotodori/.
+```
+
+5. run kotodori (WIP)
+```
+$ cargo run --release -- --elf kernel/kernel --drive kernel/fs.img
+xv6 kernel is booting
+
+scause 0x8000000000000005
+sepc=0x0000000080002bdc stval=0x0000000000000000
+panic: kerneltrap
+panic: null fmt
+panic: null fmt
+panic: null fmt
+panic: null fmt
+panic: null fmt
+panic: null fmt
+panic: null fmt
+panic: null fmt
+panic: null fmt
+panic: null fmt
+panic: null fmt
+panic: null fmt
+panic: null fmt
+panic: null fmt
+panic: null fmt
+panic: null fmt
+panic: null fmt
+panic: null fmt
+panic: null fmt
+panic: null fmt
+panic: null fmt
+panic: null fmt
+panic: null fmt
+panic: null fmt
+panic: null fmt
+panic: null fmt
+panic: null fmt
+panic: null fmt
+panic: null fmt
+panic: null fmt
+panic: null fmt
+panic: null fmt
+panic: null fmt
+panic: null fmt
+thread 'main' panicked at 'p_ascii code is not ascii code: 0xA0', src/uart.rs:163:9
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+```
+
+6. debug run  
+You can get the address of the xv6 instruction from `xv6-riscv/kernel/kernel.asm`.
+```
+$ head -n 20 xv6-riscv/kernel/kernel.asm
+
+kernel/kernel:     file format elf64-littleriscv
+
+
+Disassembly of section .text:
+
+0000000080000000 <_entry>:
+    80000000:	0000b117          	auipc	sp,0xb
+    80000004:	18010113          	addi	sp,sp,384 # 8000b180 <stack0>
+    80000008:	00001537          	lui	a0,0x1
+    8000000c:	f14025f3          	csrr	a1,mhartid
+    80000010:	00158593          	addi	a1,a1,1
+    80000014:	02b50533          	mul	a0,a0,a1
+    80000018:	00a10133          	add	sp,sp,a0
+    8000001c:	094000ef          	jal	ra,800000b0 <start>
+
+0000000080000020 <spin>:
+    80000020:	0000006f          	j	80000020 <spin>
+
+0000000080000024 <timerinit>:
+
+```
+
+kotodori's `--debug` option can specify an address as an argument.  
+If you specify an address, that will be the first breakpoint.  
+At the prompt`>>` you can use the following commands:  
+- `<Enter key>`: Executes the next instruction.
+- `p`: Print registers with non-zero values.
+- `m begin_address end_address`: Print the specified range of memory.
+- `uart`: Print uart.
+- `b address`: Set address as a breakpoint. Run to the address with the enter key.
+
+```
+$ cargo run --release -- --elf kernel/kernel --drive kernel/fs.img --debug 80000000
+instruction:
+opcode: 10111, name: Auipc("auipc"), fmt: U, raw_inst: 0000B117
+rs1: 00000, rs2: 00000, rd: 00010, imm: 00000000000000000000000000001011
+pc: 0x0000000080000000
+>> <Enter key>
+
+instruction:
+opcode: 10011, name: Addi("addi"), fmt: I, raw_inst: 18010113
+rs1: 00010, rs2: 00000, rd: 00010, imm: 00000000000000000000000110000000
+pc: 0x0000000080000004
+>> <Enter key>
+
+instruction:
+opcode: 110111, name: Lui("lui"), fmt: U, raw_inst: 00001537
+rs1: 00000, rs2: 00000, rd: 01010, imm: 00000000000000000000000000000001
+pc: 0x0000000080000008
+>> b 0x8000157c
+
+
+xv6 kernel is booting
+
+>> p
+mode:    S
+ra(0x001):      0x0000000080001578, 0b0000000000000000000000000000000010000000000000000001010101111000
+sp(0x002):      0x000000008000C090, 0b0000000000000000000000000000000010000000000000001100000010010000
+fp(0x008):      0x000000008000C0D0, 0b0000000000000000000000000000000010000000000000001100000011010000
+a0(0x00A):      0x0000000087FFF000, 0b0000000000000000000000000000000010000111111111111111000000000000
+a1(0x00B):      0x0000000010000000, 0b0000000000000000000000000000000000010000000000000000000000000000
+a2(0x00C):      0x0000000000000001, 0b0000000000000000000000000000000000000000000000000000000000000001
+a3(0x00D):      0x0000000010000000, 0b0000000000000000000000000000000000010000000000000000000000000000
+a4(0x00E):      0xFFFFFFFFFFFFF000, 0b1111111111111111111111111111111111111111111111111111000000000000
+s2(0x012):      0x0000000087FFF000, 0b0000000000000000000000000000000010000111111111111111000000000000
+s3(0x013):      0x0000000010000000, 0b0000000000000000000000000000000000010000000000000000000000000000
+s4(0x014):      0x000000000000001E, 0b0000000000000000000000000000000000000000000000000000000000011110
+s5(0x015):      0x0000000000000001, 0b0000000000000000000000000000000000000000000000000000000000000001
+s6(0x016):      0x000000000000000C, 0b0000000000000000000000000000000000000000000000000000000000001100
+s7(0x017):      0x0000000000001000, 0b0000000000000000000000000000000000000000000000000001000000000000
+pc(0x020):      0x000000008000157C, 0b0000000000000000000000000000000010000000000000000001010101111100
+mstatus(0x300): 0x0000000000000048, 0b0000000000000000000000000000000000000000000000000000000001001000
+medeleg(0x302): 0x000000000000FFFF, 0b0000000000000000000000000000000000000000000000001111111111111111
+mideleg(0x303): 0x000000000000FFFF, 0b0000000000000000000000000000000000000000000000001111111111111111
+mie(0x304):     0x0000000000000080, 0b0000000000000000000000000000000000000000000000000000000010000000
+mscratch(0x340):0x000000008000B040, 0b0000000000000000000000000000000010000000000000001011000001000000
+mepc(0x341):    0x00000000800013B8, 0b0000000000000000000000000000000010000000000000000001001110111000
+mtvec(0x3B0):   0x0000000080007E50, 0b0000000000000000000000000000000010000000000000000111111001010000
+sie(0x104):     0x0000000000000222, 0b0000000000000000000000000000000000000000000000000000001000100010
+pmpaddr0(0x3B0):0x003FFFFFFFFFFFFF, 0b0000000000111111111111111111111111111111111111111111111111111111
+pmpcfg0(0x3A0): 0x000000000000000F, 0b0000000000000000000000000000000000000000000000000000000000001111
+zero: ["zero", "gp", "tp", "t0", "t1", "t2", "s1", "a5", "a6", "a7", "s8", "s9", "s10", "s11", "t3", "t4", "t5", "t6", "mip", "sstatus", "stvec", "sscratch", "sepc", "scause", "sip", "satp"]
+mtime:          0x000000EEB25CDFCC, 0b0000000000000000000000001110111010110010010111001101111111001100
+mtimecmp:       0x0000000000111700, 0b0000000000000000000000000000000000000000000100010001011100000000
+>> m 0x80001000 0x800010FF
+0000000080001000 | 9307 0700 AFA7 F40C 9B87 0700 E39A 07FE
+0000000080001010 | 0F00 F00F 9710 0000 E780 803F 23B8 A400
+0000000080001020 | 8330 8101 0334 0101 8334 8100 1301 0102
+0000000080001030 | 6780 0000 1795 0000 1305 C503 97F0 FFFF
+0000000080001040 | E780 4069 1301 01FF 2334 1100 2330 8100
+0000000080001050 | 1304 0101 9710 0000 E780 803B F327 0010
+0000000080001060 | 93F7 2700 6390 0704 8327 8507 6354 F004
+0000000080001070 | 9B87 F7FF 1B87 0700 232C F506 631C 0700
+0000000080001080 | 8327 C507 6388 0700 F327 0010 93E7 2700
+0000000080001090 | 7390 0710 8330 8100 0334 0100 1301 0101
+00000000800010A0 | 6780 0000 1795 0000 1305 45FD 97F0 FFFF
+00000000800010B0 | E780 4062 1795 0000 1305 C5FD 97F0 FFFF
+00000000800010C0 | E780 4061 1301 01FE 233C 1100 2338 8100
+00000000800010D0 | 2334 9100 1304 0102 9304 0500 9700 0000
+00000000800010E0 | E780 00E3 6308 0502 23B8 0400 0F00 F00F
+00000000800010F0 | 0F00 500F 2FA0 0408 9700 0000 E780 C0F4
+>> uart
+thr_rbr: 00001010
+dll: 00000000
+ier: 00000011
+dlh: 00000000
+iir: 00000001
+fcr: 00000111
+lcr: 00000011
+mcr: 00000000
+lsr: 11111111
+msr: 00000000
+sr: 00000000
+>> <Enter key>
+
+instruction:
+opcode: 1100111, name: Jalr("jalr"), fmt: I, raw_inst: 8E8080E7
+rs1: 00001, rs2: 00000, rd: 00001, imm: 00000000000000000000100011101000
+pc: 0x000000008000157C
+>> <Enter key>
+
+instruction:
+opcode: 10011, name: Addi("addi"), fmt: I, raw_inst: FE010113
+rs1: 00010, rs2: 00000, rd: 00010, imm: 00000000000000000000111111100000
+pc: 0x0000000080000E60
+>>
+```
+
+
